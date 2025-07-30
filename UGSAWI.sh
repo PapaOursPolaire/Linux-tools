@@ -35,16 +35,6 @@ fi
 echo "📦 Installation des paquets nécessaires..."
 install_pkg git wget mpv grub ffmpeg
 
-# --- AUTHENTICATION FOR PRIVATE REPOS ---
-echo "🔐 Si vous utilisez des dépôts privés, entrez vos identifiants GitHub une seule fois (sinon appuyez sur Entrée)"
-read -p "Identifiant GitHub (laisser vide si inutile) : " GH_USER
-if [[ -n "$GH_USER" ]]; then
-  read -s -p "Mot de passe ou token GitHub : " GH_PASS
-  echo
-  export GIT_ASKPASS=<(echo "echo $GH_PASS")
-  git config --global credential.helper cache
-fi
-
 # --- INSTALL THEMES ---
 echo "🎮 Installation des thèmes GRUB..."
 THEMES=(
@@ -70,17 +60,10 @@ for entry in "${THEMES[@]}"; do
   if [[ -d "$TMP_DIR/$name" ]]; then
     echo "⏭️ $name déjà cloné, on saute..."
   else
-    if [[ -n "$GH_USER" ]]; then
-      git clone --depth=1 "https://$GH_USER:$GH_PASS@${url#https://}" "$TMP_DIR/$name" || {
-        echo "❌ Échec du clonage de $name"
-        continue
-      }
-    else
-      git clone --depth=1 "$url" "$TMP_DIR/$name" || {
-        echo "❌ Échec du clonage de $name"
-        continue
-      }
-    fi
+    git clone --depth=1 "$url" "$TMP_DIR/$name" || {
+      echo "❌ Échec du clonage de $name"
+      continue
+    }
   fi
 
   if [[ -d "$GRUB_DIR/themes/$name" ]]; then
