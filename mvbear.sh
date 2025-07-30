@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 16
+#Version 21.2
 
 # Vérification des droits root
 if [ "$(id -u)" -eq 0 ]; then
@@ -122,10 +122,18 @@ setup_autostart() {
     
     mkdir -p "$HOME/.config/autostart"
     
+    # Créer un script wrapper pour gérer les chemins avec espaces
+    local wrapper_script="$HOME/.config/video-wallpaper-wrapper.sh"
+    cat > "$wrapper_script" <<EOL
+#!/bin/bash
+"$0" --start "$video_path" $audio_enabled
+EOL
+    chmod +x "$wrapper_script"
+    
     cat > "$HOME/.config/autostart/video-wallpaper.desktop" <<EOL
 [Desktop Entry]
 Name=Fond d'écran vidéo
-Exec="$0" --start "$video_path" $audio_enabled
+Exec="$wrapper_script"
 Type=Application
 Hidden=false
 X-GNOME-Autostart-enabled=true
@@ -134,10 +142,14 @@ EOL
     echo "Configuration automatique activée pour la session : $USER"
 }
 
-# Démarrage du fond vidéo
+# Démarrage du fond vidéo avec MPV
 start_video_background() {
     local VIDEO_PATH="$1"
     local AUDIO_ENABLED="$2"
+    
+    # Vérifier si le processus est déjà en cours d'exécution
+    pkill -f "xwinwrap.*$(basename "$VIDEO_PATH")"
+    pkill -f "mpv.*$(basename "$VIDEO_PATH")"
     
     # Options audio
     local AUDIO_OPT="--no-audio"
@@ -154,10 +166,16 @@ start_video_background() {
         --stop-screensaver \
         --no-input-default-bindings \
         --cursor-autohide=always \
+        --hwdec=auto \
+        --vo=gpu \
+        --gpu-context=x11 \
+        --no-border \
         --no-keepaspect"
     
-    # Démarrer le fond
+    # Forcer l'utilisation de MPV comme lecteur vidéo
     xwinwrap -ni -ov -fs -- mpv -wid WID $AUDIO_OPT $BEHAVIOR_OPTS "$VIDEO_PATH" >/dev/null 2>&1 &
+    
+    echo "Fond vidéo démarré avec MPV (PID $!)"
 }
 
 # Fonction pour KDE Plasma
@@ -167,7 +185,7 @@ setup_kde() {
     
     # Solution de repli si qdbus n'est pas disponible
     if ! command -v qdbus &> /dev/null; then
-        echo "qdbus non disponible, utilisation de la méthode xwinwrap"
+        echo "qdbus non disponible, utilisation de la méthode MPV"
         start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
         return
     fi
@@ -183,6 +201,42 @@ setup_kde() {
             d.writeConfig('Playback', $AUDIO_ENABLED);
         }
     "
+    
+    # Vérifier si la configuration a réussi
+    sleep 2
+    if ! pgrep -f "plasma-video" >/dev/null; then
+        echo "La méthode KDE native a échoué, basculement sur MPV"
+        start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
+    fi
+}
+
+# Tester si mpv fonctionne avec la vidéo
+test_video_playback() {
+    local VIDEO_PATH="$1"
+    
+    timeout 3 mpv --no-config --vo=null --ao=null "$VIDEO_PATH" >/dev/null 2>&1
+    return $?
+}
+
+# Vérifier l'association MIME
+check_mime_association() {
+    local video_path="$1"
+    local mime_type=$(xdg-mime query filetype "$video_path")
+    
+    # Vérifier si MPV est associé à ce type MIME
+    if ! xdg-mime query default "$mime_type" | grep -qi "mpv"; then
+        echo "Le type MIME $mime_type n'est pas associé à MPV"
+        
+        # Essayer d'associer MPV
+        if command -v xdg-mime &> /dev/null; then
+            echo "Tentative d'association de MPV avec $mime_type..."
+            xdg-mime default mpv.desktop "$mime_type"
+        fi
+        
+        return 1
+    fi
+    
+    return 0
 }
 
 # --- Début de l'exécution principale ---
@@ -197,7 +251,21 @@ if [ "$1" = "--start" ]; then
         exit 1
     fi
     
+    # Attendre que l'environnement de bureau soit prêt
+    sleep 5
+    
     DE=$(detect_desktop_environment)
+    
+    # Vérifier l'association MIME
+    check_mime_association "$VIDEO_PATH"
+    
+    # Tester la lecture vidéo
+    if ! test_video_playback "$VIDEO_PATH"; then
+        echo "Échec de la lecture de la vidéo, tentative de correction..."
+        sudo apt install --reinstall -y ffmpeg mpv || \
+        sudo dnf reinstall -y ffmpeg mpv || \
+        sudo pacman -S --noconfirm ffmpeg mpv
+    fi
     
     case "$DE" in
         *kde*)
@@ -207,6 +275,14 @@ if [ "$1" = "--start" ]; then
             start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
             ;;
     esac
+    
+    # Vérifier si le processus est en cours d'exécution
+    sleep 3
+    if ! pgrep -f "mpv.*$(basename "$VIDEO_PATH")" >/dev/null; then
+        echo "Échec du démarrage avec MPV, essai avec FFmpeg..."
+        # Solution alternative avec FFmpeg
+        xwinwrap -ni -ov -fs -- ffmpeg -re -i "$VIDEO_PATH" -vf "scale=iw:-1" -c:v rawvideo -pix_fmt yuv420p -f v4l2 /dev/null >/dev/null 2>&1 &
+    fi
     exit 0
 fi
 
@@ -223,6 +299,9 @@ VIDEO=$(select_video)
 detect_audio
 AUDIO_ENABLED=$?
 
+# Vérifier l'association MIME
+check_mime_association "$VIDEO"
+
 # Configuration selon l'environnement
 case "$DE" in
     *kde*)
@@ -232,6 +311,23 @@ case "$DE" in
         start_video_background "$VIDEO" "$AUDIO_ENABLED"
         ;;
 esac
+
+# Attendre 3 secondes et vérifier si le processus est toujours en cours
+sleep 3
+if ! pgrep -f "mpv.*$(basename "$VIDEO")" >/dev/null; then
+    echo "Échec du démarrage du fond vidéo, tentative avec FFmpeg..."
+    pkill -f "xwinwrap.*$(basename "$VIDEO")"
+    
+    # Solution alternative avec FFmpeg
+    xwinwrap -ni -ov -fs -- ffmpeg -re -i "$VIDEO" -vf "scale=iw:-1" -c:v rawvideo -pix_fmt yuv420p -f v4l2 /dev/null >/dev/null 2>&1 &
+    
+    # Si cela échoue aussi, utiliser une méthode de secours
+    sleep 3
+    if ! pgrep -f "ffmpeg.*$(basename "$VIDEO")" >/dev/null; then
+        echo "Utilisation de la méthode de secours avec xvfb..."
+        xvfb-run -a mpv --loop=inf "$VIDEO" >/dev/null 2>&1 &
+    fi
+fi
 
 # Configuration du démarrage automatique
 zenity --question \
@@ -243,4 +339,4 @@ if [ $? -eq 0 ]; then
 fi
 
 echo "Fond d'écran vidéo activé !"
-echo "Pour stopper : pkill xwinwrap && pkill mpv"
+echo "Pour stopper : pkill -f 'xwinwrap|mpv|ffmpeg'"
