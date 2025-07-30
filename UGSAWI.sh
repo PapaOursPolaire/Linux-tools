@@ -32,6 +32,10 @@ else
   GRUB_MKCONFIG="grub-mkconfig"
 fi
 
+# --- CLEAN GIT CONFIG TO AVOID LOGIN PROMPTS ---
+git config --global --unset credential.helper
+git config --global credential.helper ""
+
 # --- INSTALL DEPENDENCIES ---
 echo "📦 Installation des paquets nécessaires..."
 install_pkg git wget mpv grub ffmpeg
@@ -120,35 +124,60 @@ select entry in "${THEMES[@]%%|*}"; do
   fi
 done
 
-# --- ANIMATED WALLPAPER ---
-echo "🖼️ Configuration du fond animé (X11 uniquement)"
-WALLPAPER_SCRIPT="$HOME/.config/animated-wallpaper.sh"
+# --- DETECT DE AND CONFIGURE ANIMATED WALLPAPER ---
 VIDEO_DIR="$HOME/Videos/wallpapers"
 VIDEO_FILE="$VIDEO_DIR/custom-wallpaper.mp4"
-
-install_pkg xwinwrap zenity
 mkdir -p "$VIDEO_DIR"
 
-if [[ ! -f "$WALLPAPER_SCRIPT" ]]; then
-  echo "🧠 Création du script de fond animé..."
-  cat << EOF > "$WALLPAPER_SCRIPT"
-#!/bin/bash
-pkill xwinwrap &>/dev/null || true
-xwinwrap -g 1920x1080+0+0 -ni -fs -s -st -sp -b -nf -- mpv --wid=WID --loop --no-audio --panscan=1.0 --no-osc --no-input-default-bindings "$VIDEO_FILE" &
-EOF
-  chmod +x "$WALLPAPER_SCRIPT"
+echo "🖼️ Détection de l'environnement de bureau..."
+DE=""
+if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
+  DE="kde"
+elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]]; then
+  DE="gnome"
+elif [[ "$XDG_SESSION_TYPE" == "wayland" && "$XDG_CURRENT_DESKTOP" == *"Hyprland"* ]]; then
+  DE="hyprland"
+elif [[ "$XDG_SESSION_TYPE" == "x11" ]]; then
+  DE="x11"
 fi
 
-if [[ "$XDG_SESSION_TYPE" == "x11" ]]; then
-  echo "🗂️ Choisissez une vidéo (format .mp4 recommandé)"
-  SELECTED_VIDEO=$(zenity --file-selection --title="Choisissez une vidéo pour le fond d'écran")
-  if [[ -f "$SELECTED_VIDEO" ]]; then
-    cp "$SELECTED_VIDEO" "$VIDEO_FILE"
-    bash "$WALLPAPER_SCRIPT"
-    echo "✅ Fond d'écran animé mis à jour."
-  else
-    echo "❌ Aucune vidéo sélectionnée."
-  fi
+echo "🧠 Choisissez une vidéo pour le fond animé (mp4 recommandé)..."
+install_pkg zenity
+SELECTED_VIDEO=$(zenity --file-selection --title="Choisissez une vidéo animée de fond")
+if [[ ! -f "$SELECTED_VIDEO" ]]; then
+  echo "❌ Aucune vidéo sélectionnée."
 else
-  echo "⚠️ Wayland détecté. mpvpaper requis (non couvert ici)."
+  cp "$SELECTED_VIDEO" "$VIDEO_FILE"
+  echo "✅ Vidéo copiée dans $VIDEO_FILE"
+
+  case "$DE" in
+    kde)
+      echo "🎥 Intégration fond animé dans KDE..."
+      qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+      var allDesktops = desktops();
+      for (i=0;i<allDesktops.length;i++) {
+        d = allDesktops[i];
+        d.wallpaperPlugin = 'org.kde.video';
+        d.currentConfigGroup = Array('Wallpaper', 'org.kde.video', 'General');
+        d.writeConfig('Video', '$VIDEO_FILE');
+      }"
+      ;;
+    gnome)
+      echo "🎥 Intégration fond animé dans GNOME (sans son, en image statique de secours)..."
+      gsettings set org.gnome.desktop.background picture-uri "file://$VIDEO_FILE"
+      ;;
+    hyprland)
+      echo "⚠️ Hyprland détecté. Veuillez installer et configurer 'mpvpaper' manuellement."
+      echo "Exemple : mpvpaper '*' \"$VIDEO_FILE\""
+      ;;
+    x11)
+      echo "🎥 Intégration fond animé via xwinwrap..."
+      install_pkg xwinwrap
+      pkill xwinwrap &>/dev/null || true
+      xwinwrap -g 1920x1080+0+0 -ni -fs -s -st -sp -b -nf -- mpv --wid=WID --loop --no-audio --panscan=1.0 --no-osc --no-input-default-bindings "$VIDEO_FILE" &
+      ;;
+    *)
+      echo "❌ Environnement de bureau non détecté ou non pris en charge automatiquement."
+      ;;
+  esac
 fi
