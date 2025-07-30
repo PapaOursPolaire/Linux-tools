@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
+#set -e
 
-### UNIVERSAL GRUB + SOUND + ANIMATED WALLPAPER INSTALLER ###
+### UNIVERSAL GRUB + SOUND + ANIMATED WALLPAPER INSTALLER (UGSAWI) ###
 
 # --- UTILITIES ---
 install_pkg() {
