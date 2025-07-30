@@ -1,7 +1,6 @@
 #!/bin/bash
-#set -e
 
-### UNIVERSAL GRUB + SOUND + ANIMATED WALLPAPER INSTALLER (UGSAWI) ###
+### UNIVERSAL GRUB + SOUND + ANIMATED WALLPAPER INSTALLER ###
 
 # --- UTILITIES ---
 install_pkg() {
@@ -36,6 +35,16 @@ fi
 echo "📦 Installation des paquets nécessaires..."
 install_pkg git wget mpv grub ffmpeg
 
+# --- AUTHENTICATION FOR PRIVATE REPOS ---
+echo "🔐 Si vous utilisez des dépôts privés, entrez vos identifiants GitHub une seule fois (sinon appuyez sur Entrée)"
+read -p "Identifiant GitHub (laisser vide si inutile) : " GH_USER
+if [[ -n "$GH_USER" ]]; then
+  read -s -p "Mot de passe ou token GitHub : " GH_PASS
+  echo
+  export GIT_ASKPASS=<(echo "echo $GH_PASS")
+  git config --global credential.helper cache
+fi
+
 # --- INSTALL THEMES ---
 echo "🎮 Installation des thèmes GRUB..."
 THEMES=(
@@ -57,8 +66,28 @@ mkdir -p "$TMP_DIR"
 for entry in "${THEMES[@]}"; do
   IFS="|" read -r name url <<< "$entry"
   echo "➡️ Installation de $name"
-  git clone --depth=1 "$url" "$TMP_DIR/$name"
-  cp -r "$TMP_DIR/$name" "$GRUB_DIR/themes/"
+
+  if [[ -d "$TMP_DIR/$name" ]]; then
+    echo "⏭️ $name déjà cloné, on saute..."
+  else
+    if [[ -n "$GH_USER" ]]; then
+      git clone --depth=1 "https://$GH_USER:$GH_PASS@${url#https://}" "$TMP_DIR/$name" || {
+        echo "❌ Échec du clonage de $name"
+        continue
+      }
+    else
+      git clone --depth=1 "$url" "$TMP_DIR/$name" || {
+        echo "❌ Échec du clonage de $name"
+        continue
+      }
+    fi
+  fi
+
+  if [[ -d "$GRUB_DIR/themes/$name" ]]; then
+    echo "🎨 $name déjà présent dans GRUB, on saute la copie."
+  else
+    sudo cp -r "$TMP_DIR/$name" "$GRUB_DIR/themes/"
+  fi
 done
 
 # --- APPLY DEFAULT THEME ---
@@ -116,9 +145,7 @@ VIDEO_FILE="$VIDEO_DIR/custom-wallpaper.mp4"
 install_pkg xwinwrap zenity
 mkdir -p "$VIDEO_DIR"
 
-if [[ -f "$WALLPAPER_SCRIPT" ]]; then
-  echo "🔄 Script déjà existant. Mise à jour du fond..."
-else
+if [[ ! -f "$WALLPAPER_SCRIPT" ]]; then
   echo "🧠 Création du script de fond animé..."
   cat << EOF > "$WALLPAPER_SCRIPT"
 #!/bin/bash
