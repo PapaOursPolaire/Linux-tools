@@ -1,4 +1,5 @@
 #!/bin/bash
+# version 16
 
 # Vérification des droits root
 if [ "$(id -u)" -eq 0 ]; then
