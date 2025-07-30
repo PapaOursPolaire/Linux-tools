@@ -67,10 +67,18 @@ install_dependencies() {
     # Installation spécifique pour KDE
     if [[ "$DE" == *kde* ]]; then
         case "$PM" in
-            apt) sudo apt install -y qdbus ;;
-            dnf|yum) sudo $PM install -y qt5-qdbus ;;
-            pacman) sudo pacman -S --noconfirm qt5-tools ;;
-            zypper) sudo zypper in -n libqt5-qdbus-5 ;;
+            apt) 
+                sudo apt install -y qdbus plasma-wallpapers-dynamic
+                ;;
+            dnf|yum) 
+                sudo $PM install -y qt5-qdbus plasma5-wallpapers-dynamic
+                ;;
+            pacman) 
+                sudo pacman -S --noconfirm qt5-tools plasma5-wallpapers-dynamic
+                ;;
+            zypper) 
+                sudo zypper in -n libqt5-qdbus-5 plasma5-wallpapers-dynamic
+                ;;
         esac
     fi
 }
@@ -103,7 +111,7 @@ detect_audio() {
         --text="Voulez-vous activer le son de l'arrière-plan ?" \
         --ok-label="Oui" \
         --cancel-label="Non"
-    echo $?
+    # Renvoie 0 pour Oui, 1 pour Non
 }
 
 # Configuration automatique du démarrage
@@ -116,7 +124,7 @@ setup_autostart() {
     cat > "$HOME/.config/autostart/video-wallpaper.desktop" <<EOL
 [Desktop Entry]
 Name=Fond d'écran vidéo
-Exec=$0 --start "$video_path" $audio_enabled
+Exec="$0" --start "$video_path" $audio_enabled
 Type=Application
 Hidden=false
 X-GNOME-Autostart-enabled=true
@@ -132,11 +140,11 @@ start_video_background() {
     
     # Options audio
     local AUDIO_OPT="--no-audio"
-    [ "$AUDIO_ENABLED" -eq 0 ] && AUDIO_OPT="--audio-device=auto"
+    [ "$AUDIO_ENABLED" -eq 0 ] && AUDIO_OPT="--audio-device=auto --volume=50 --no-mute"
     
     # Options de comportement
     local BEHAVIOR_OPTS="
-        --loop \
+        --loop=inf \
         --no-osc \
         --no-osd-bar \
         --input-vo-keyboard=no \
@@ -148,20 +156,30 @@ start_video_background() {
         --no-keepaspect"
     
     # Démarrer le fond
-    xwinwrap -ni -ov -fs -- \
-        mpv -wid WID $AUDIO_OPT $BEHAVIOR_OPTS "$VIDEO_PATH" >/dev/null 2>&1 &
+    xwinwrap -ni -ov -fs -- mpv -wid WID $AUDIO_OPT $BEHAVIOR_OPTS "$VIDEO_PATH" >/dev/null 2>&1 &
 }
 
 # Fonction pour KDE Plasma
 setup_kde() {
     local VIDEO_PATH="$1"
+    local AUDIO_ENABLED="$2"
+    
+    # Solution de repli si qdbus n'est pas disponible
+    if ! command -v qdbus &> /dev/null; then
+        echo "qdbus non disponible, utilisation de la méthode xwinwrap"
+        start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
+        return
+    fi
+    
+    # Configuration avec qdbus
     qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
         var allDesktops = desktops();
         for (i=0;i<allDesktops.length;i++) {
             d = allDesktops[i];
             d.wallpaperPlugin = 'org.kde.videowallpaper';
             d.currentConfigGroup = Array('Wallpaper', 'org.kde.videowallpaper', 'General');
-            d.writeConfig('Image', 'file://$VIDEO_PATH')
+            d.writeConfig('Image', 'file://$VIDEO_PATH');
+            d.writeConfig('Playback', $AUDIO_ENABLED);
         }
     "
 }
@@ -178,7 +196,16 @@ if [ "$1" = "--start" ]; then
         exit 1
     fi
     
-    start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
+    DE=$(detect_desktop_environment)
+    
+    case "$DE" in
+        *kde*)
+            setup_kde "$VIDEO_PATH" "$AUDIO_ENABLED"
+            ;;
+        *)
+            start_video_background "$VIDEO_PATH" "$AUDIO_ENABLED"
+            ;;
+    esac
     exit 0
 fi
 
@@ -192,13 +219,13 @@ VIDEO=$(select_video)
 [ -z "$VIDEO" ] && exit 0
 
 # Activation du son
-AUDIO_CHOICE=$(detect_audio)
+detect_audio
 AUDIO_ENABLED=$?
 
 # Configuration selon l'environnement
 case "$DE" in
     *kde*)
-        setup_kde "$VIDEO"
+        setup_kde "$VIDEO" "$AUDIO_ENABLED"
         ;;
     *)
         start_video_background "$VIDEO" "$AUDIO_ENABLED"
@@ -208,7 +235,8 @@ esac
 # Configuration du démarrage automatique
 zenity --question \
     --title="Démarrage automatique" \
-    --text="Voulez-vous démarrer automatiquement ce fond d'écran à l'ouverture de session ?"
+    --text="Voulez-vous démarrer automatiquement ce fond d'écran à l'ouverture de session ?" \
+    --width=300
 if [ $? -eq 0 ]; then
     setup_autostart "$VIDEO" "$AUDIO_ENABLED"
 fi
