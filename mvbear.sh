@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version 21.2
+#Version 23.0
 
 # Vérification des droits root
 if [ "$(id -u)" -eq 0 ]; then
