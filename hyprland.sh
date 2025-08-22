@@ -1,6 +1,9 @@
-# =============================================================================
-# SCRIPTS UTILITAIRES AVANCÉS
-# =============================================================================
+#!/bin/bash
+
+# Script universel de l'installation et de la  configuration d'Hyprland 
+# Made by PapaOursPolaire - available on GitHub
+# Version: 112.2, correctif 2 de la version 112.2
+# Mise à jour : 22/08/2025 à 15:48
 
 create_advanced_scripts() {
     log "HEADER" "Création des scripts utilitaires avancés"
@@ -1499,7 +1502,8 @@ cleanup_and_finalize() {
 # Point d'entrée principal
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
-fi#!/bin/bash
+fi
+#!/bin/bash
 
 # =============================================================================
 # Hyprland Universal Deployment Script - Complete Version
