@@ -3,8 +3,8 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 17.0
-# Mise à jour : 23/08/2025 à 21:37
+# Version: 18.0
+# Mise à jour : 23/08/2025 à 21:41
 
 set -e
 
@@ -185,8 +185,12 @@ install_package() {
             sudo apt update && sudo apt install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
                     print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
-                    flatpak install -y flathub "$flatpak_package" || return 1
+                    flatpak install -y flathub "$flatpak_package" || {
+                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        return 1
+                    }
                 else
+                    print_message "❌ Échec d'installation via apt" "$RED"
                     return 1
                 fi
             }
@@ -195,8 +199,12 @@ install_package() {
             sudo dnf install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
                     print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
-                    flatpak install -y flathub "$flatpak_package" || return 1
+                    flatpak install -y flathub "$flatpak_package" || {
+                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        return 1
+                    }
                 else
+                    print_message "❌ Échec d'installation via dnf" "$RED"
                     return 1
                 fi
             }
@@ -205,8 +213,12 @@ install_package() {
             sudo zypper install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
                     print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
-                    flatpak install -y flathub "$flatpak_package" || return 1
+                    flatpak install -y flathub "$flatpak_package" || {
+                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        return 1
+                    }
                 else
+                    print_message "❌ Échec d'installation via zypper" "$RED"
                     return 1
                 fi
             }
@@ -441,18 +453,34 @@ main() {
     # Docker Compose
     if ask_install "Docker Compose" "Orchestration de conteneurs"; then
         # Vérifier si Docker Compose est déjà installé
-        if command -v docker-compose >/dev/null 2>&1; then
+        if command -v docker-compose >/dev/null 2>&1 || docker compose version >/dev/null 2>&1; then
             print_message "✅ Docker Compose est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
-                arch) install_package "docker-compose" "" "Outil d'orchestration Docker" ;;
-                debian) install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" ;;
-                fedora) install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" ;;
-                opensuse) install_package "docker-compose" "" "Outil d'orchestration Docker" ;;
+                arch) 
+                    install_package "docker-compose" "" "Outil d'orchestration Docker" || {
+                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
+                    }
+                    ;;
+                debian) 
+                    install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" || {
+                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
+                    }
+                    ;;
+                fedora) 
+                    install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" || {
+                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
+                    }
+                    ;;
+                opensuse) 
+                    install_package "docker-compose" "" "Outil d'orchestration Docker" || {
+                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
+                    }
+                    ;;
             esac
         fi
     fi
-    
+        
     # Éditeurs de code
     if ask_install "Visual Studio Code" "Éditeur de code Microsoft"; then
         case "$DISTRO" in
