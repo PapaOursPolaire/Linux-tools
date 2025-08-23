@@ -3,8 +3,8 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 16.0
-# Mise à jour : 23/08/2025 à 19:31
+# Version: 17.0
+# Mise à jour : 23/08/2025 à 21:37
 
 set -e
 
@@ -394,46 +394,63 @@ main() {
     # Docker
     if ask_install "Docker" "Conteneurisation"; then
         # Vérifier si Docker est déjà installé
-        if is_binary_available "docker"; then
+        if command -v docker >/dev/null 2>&1; then
             print_message "✅ Docker est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
-                    install_package "docker"
-                    sudo systemctl enable docker
-                    sudo usermod -aG docker $USER
+                    install_package "docker" "" "Moteur de conteneurisation"
+                    if command -v docker >/dev/null 2>&1; then
+                        sudo systemctl enable docker
+                        sudo usermod -aG docker $USER
+                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                    fi
                     ;;
                 debian)
-                    # Installation via le dépôt officiel Docker
-                    if ! is_package_installed "docker-ce"; then
+                    # Vérifier si le dépôt Docker est déjà configuré
+                    if [ ! -f "/etc/apt/sources.list.d/docker.list" ] && [ ! -f "/usr/share/keyrings/docker-archive-keyring.gpg" ]; then
                         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
                         echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
                         sudo apt update
                     fi
-                    install_package "docker-ce docker-ce-cli containerd.io"
-                    sudo usermod -aG docker $USER
+                    
+                    # Installer Docker
+                    if install_package "docker-ce docker-ce-cli containerd.io" "" "Moteur de conteneurisation"; then
+                        sudo usermod -aG docker $USER
+                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                    fi
                     ;;
                 fedora)
-                    install_package "docker-ce docker-ce-cli containerd.io"
-                    sudo systemctl enable docker
-                    sudo usermod -aG docker $USER
+                    if install_package "docker-ce docker-ce-cli containerd.io" "" "Moteur de conteneurisation"; then
+                        sudo systemctl enable docker
+                        sudo usermod -aG docker $USER
+                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                    fi
                     ;;
                 opensuse)
-                    install_package "docker"
-                    sudo systemctl enable docker
-                    sudo usermod -aG docker $USER
+                    if install_package "docker" "" "Moteur de conteneurisation"; then
+                        sudo systemctl enable docker
+                        sudo usermod -aG docker $USER
+                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                    fi
                     ;;
             esac
         fi
     fi
-    
+
+    # Docker Compose
     if ask_install "Docker Compose" "Orchestration de conteneurs"; then
-        case "$DISTRO" in
-            arch) install_package "docker-compose" ;;
-            debian) install_package "docker-compose-plugin" ;;
-            fedora) install_package "docker-compose-plugin" ;;
-            opensuse) install_package "docker-compose" ;;
-        esac
+        # Vérifier si Docker Compose est déjà installé
+        if command -v docker-compose >/dev/null 2>&1; then
+            print_message "✅ Docker Compose est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) install_package "docker-compose" "" "Outil d'orchestration Docker" ;;
+                debian) install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" ;;
+                fedora) install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" ;;
+                opensuse) install_package "docker-compose" "" "Outil d'orchestration Docker" ;;
+            esac
+        fi
     fi
     
     # Éditeurs de code
