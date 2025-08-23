@@ -3,10 +3,8 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 23.0
-# Mise à jour : 23/08/2025 à 21:56
-
-set -e
+# Version: 45.2
+# Mise à jour : 23/08/2025 à 22:57
 
 # Couleurs pour l'affichage
 RED='\033[0;31m'
@@ -253,9 +251,52 @@ install_flatpak() {
     return 0
 }
 
+# Fonction utilitaire pour installer un logiciel avec vérification
+safe_install() {
+    local name="$1"
+    local description="$2"
+    local package_name="$3"
+    local flatpak_id="$4"
+    local binary_name="$5"
+    
+    if ask_install "$name" "$description"; then
+        # Utiliser le nom du binaire fourni ou le nom du paquet par défaut
+        local check_binary="${binary_name:-$package_name}"
+        
+        # Vérifier si le logiciel est déjà installé
+        if command -v "$check_binary" >/dev/null 2>&1; then
+            print_message "✅ $name est déjà installé" "$GREEN"
+            return 0
+        fi
+        
+        # Essayer d'installer via le gestionnaire de paquets
+        if [ -n "$package_name" ]; then
+            install_package "$package_name" "$flatpak_id" "$description" || {
+                print_message "❌ Échec d'installation de $name" "$RED"
+                return 1
+            }
+        # Sinon essayer via flatpak
+        elif [ -n "$flatpak_id" ] && $FLATPAK_AVAILABLE; then
+            install_flatpak "$flatpak_id" "$description" || {
+                print_message "❌ Échec d'installation de $name" "$RED"
+                return 1
+            }
+        else
+            print_message "❌ Aucune méthode d'installation disponible pour $name" "$RED"
+            return 1
+        fi
+    fi
+    return 0
+}
 
 # Installation Node.js avec NVM
 install_nodejs() {
+    # Vérifier si Node.js est déjà installé via NVM ou autre
+    if command -v node >/dev/null 2>&1; then
+        print_message "✅ Node.js est déjà installé" "$GREEN"
+        return 0
+    fi
+    
     print_message "📦 Installation de Node.js via NVM..." "$BLUE"
     
     # Installation de NVM
@@ -273,55 +314,35 @@ install_nodejs() {
 
 # Installation des extensions VS Code
 install_vscode_extensions() {
+    if ! command -v code >/dev/null 2>&1; then
+        print_message "❌ VS Code n'est pas installé, impossible d'installer les extensions" "$RED"
+        return 1
+    fi
+    
     print_message "📦 Installation des extensions VS Code..." "$BLUE"
     
     extensions=(
-        "ms-python.python"
-        "ms-vscode.cpptools"
-        "redhat.java"
-        "golang.go"
-        "rust-lang.rust-analyzer"
-        "esbenp.prettier-vscode"
-        "dbaeumer.vscode-eslint"
-        "bradlc.vscode-tailwindcss"
-        "ritwickdey.liveserver"
-        "formulahendry.auto-rename-tag"
-        "formulahendry.auto-close-tag"
-        "ms-azuretools.vscode-docker"
-        "ms-toolsai.jupyter"
-        "ms-vscode.makefile-tools"
-        "ms-vscode.cmake-tools"
-        "eamodio.gitlens"
-        "mhutchie.git-graph"
-        "donjayamanne.githistory"
-        "aaron-bond.better-comments"
-        "usernamehw.errorlens"
-        "gruntfuggly.todo-tree"
-        "streetsidesoftware.code-spell-checker"
-        "pkief.material-icon-theme"
-        "dracula-theme.theme-dracula"
-        "zhuangtongfa.material-theme"
-        "rocketseat.theme-omni"
-        "yzhang.markdown-all-in-one"
-        "shd101wyy.markdown-preview-enhanced"
-        "vscjava.vscode-java-pack"
-        "github.copilot"
-        "ms-vscode.cpptools-extension-pack"
-        "codeium.codeium"
-        "amazonwebservices.aws-toolkit-vscode"
-        "rangav.vscode-thunder-client"
-        "humao.rest-client"
-        "johnpapa.vscode-peacock"
-        "vscode-icons-team.vscode-icons"
-        "coenraads.bracket-pair-colorizer-2"
-        "formulahendry.code-runner"
-        "tabnine.tabnine-vscode"
+        "ms-python.python" "ms-vscode.cpptools" "redhat.java" "golang.go"
+        "rust-lang.rust-analyzer" "esbenp.prettier-vscode" "dbaeumer.vscode-eslint"
+        "bradlc.vscode-tailwindcss" "ritwickdey.liveserver" "formulahendry.auto-rename-tag"
+        "formulahendry.auto-close-tag" "ms-azuretools.vscode-docker" "ms-toolsai.jupyter"
+        "ms-vscode.makefile-tools" "ms-vscode.cmake-tools" "eamodio.gitlens"
+        "mhutchie.git-graph" "donjayamanne.githistory" "aaron-bond.better-comments"
+        "usernamehw.errorlens" "gruntfuggly.todo-tree" "streetsidesoftware.code-spell-checker"
+        "pkief.material-icon-theme" "dracula-theme.theme-dracula" "zhuangtongfa.material-theme"
+        "rocketseat.theme-omni" "yzhang.markdown-all-in-one" "shd101wyy.markdown-preview-enhanced"
+        "vscjava.vscode-java-pack" "github.copilot" "ms-vscode.cpptools-extension-pack"
+        "codeium.codeium" "amazonwebservices.aws-toolkit-vscode" "rangav.vscode-thunder-client"
+        "humao.rest-client" "johnpapa.vscode-peacock" "vscode-icons-team.vscode-icons"
+        "coenraads.bracket-pair-colorizer-2" "formulahendry.code-runner" "tabnine.tabnine-vscode"
         "hediet.vscode-drawio"
     )
     
     for ext in "${extensions[@]}"; do
-        print_message "Installing extension: $ext" "$BLUE"
-        code --install-extension "$ext" --force
+        print_message "Installation extension: $ext" "$BLUE"
+        code --install-extension "$ext" --force || {
+            print_message "⚠️  Échec installation extension: $ext" "$YELLOW"
+        }
     done
     
     print_message "✅ Extensions VS Code installées" "$GREEN"
@@ -366,16 +387,24 @@ main() {
     print_message "🔄 Mise à jour du système..." "$BLUE"
     case "$DISTRO" in
         arch)
-            sudo pacman -Syu --noconfirm
+            sudo pacman -Syu --noconfirm || {
+                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+            }
             ;;
         debian)
-            sudo apt update && sudo apt upgrade -y
+            sudo apt update && sudo apt upgrade -y || {
+                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+            }
             ;;
         fedora)
-            sudo dnf upgrade -y
+            sudo dnf upgrade -y || {
+                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+            }
             ;;
         opensuse)
-            sudo zypper refresh && sudo zypper update -y
+            sudo zypper refresh && sudo zypper update -y || {
+                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+            }
             ;;
     esac
     
@@ -390,28 +419,19 @@ main() {
     print_section "🛠️  OUTILS DE DÉVELOPPEMENT"
     
     # Git et Git LFS
-    if ask_install "Git" "Contrôle de version"; then
-        install_package "git" "" "Système de contrôle de version"
-    fi
-    
-    if ask_install "Git LFS" "Support des gros fichiers Git"; then
-        case "$DISTRO" in
-            arch) install_package "git-lfs" ;;
-            debian) install_package "git-lfs" ;;
-            fedora) install_package "git-lfs" ;;
-            opensuse) install_package "git-lfs" ;;
-        esac
-    fi
+    safe_install "Git" "Contrôle de version" "git" "" "git"
+    safe_install "Git LFS" "Support des gros fichiers Git" "git-lfs" "" "git-lfs"
     
     # Docker
     if ask_install "Docker" "Conteneurisation"; then
-        # Vérifier si Docker est déjà installé
         if command -v docker >/dev/null 2>&1; then
             print_message "✅ Docker est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
-                    install_package "docker" "" "Moteur de conteneurisation"
+                    install_package "docker" "" "Moteur de conteneurisation" || {
+                        print_message "❌ Échec d'installation de Docker" "$RED"
+                    }
                     if command -v docker >/dev/null 2>&1; then
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
@@ -430,6 +450,8 @@ main() {
                     if install_package "docker-ce docker-ce-cli containerd.io" "" "Moteur de conteneurisation"; then
                         sudo usermod -aG docker $USER
                         print_message "✅ Docker configuré avec succès" "$GREEN"
+                    else
+                        print_message "❌ Échec d'installation de Docker" "$RED"
                     fi
                     ;;
                 fedora)
@@ -437,6 +459,8 @@ main() {
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
                         print_message "✅ Docker configuré avec succès" "$GREEN"
+                    else
+                        print_message "❌ Échec d'installation de Docker" "$RED"
                     fi
                     ;;
                 opensuse)
@@ -444,46 +468,18 @@ main() {
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
                         print_message "✅ Docker configuré avec succès" "$GREEN"
+                    else
+                        print_message "❌ Échec d'installation de Docker" "$RED"
                     fi
                     ;;
             esac
         fi
     fi
-
-    # Docker Compose
-    if ask_install "Docker Compose" "Orchestration de conteneurs"; then
-        # Vérifier si Docker Compose est déjà installé
-        if command -v docker-compose >/dev/null 2>&1 || docker compose version >/dev/null 2>&1; then
-            print_message "✅ Docker Compose est déjà installé" "$GREEN"
-        else
-            case "$DISTRO" in
-                arch) 
-                    install_package "docker-compose" "" "Outil d'orchestration Docker" || {
-                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
-                    }
-                    ;;
-                debian) 
-                    install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" || {
-                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
-                    }
-                    ;;
-                fedora) 
-                    install_package "docker-compose-plugin" "" "Outil d'orchestration Docker" || {
-                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
-                    }
-                    ;;
-                opensuse) 
-                    install_package "docker-compose" "" "Outil d'orchestration Docker" || {
-                        print_message "⚠️  Installation de Docker Compose échouée, continuation..." "$YELLOW"
-                    }
-                    ;;
-            esac
-        fi
-    fi
-        
+    
+    safe_install "Docker Compose" "Orchestration de conteneurs" "docker-compose" "" "docker-compose"
+    
     # Éditeurs de code
     if ask_install "Visual Studio Code" "Éditeur de code Microsoft"; then
-        # Vérifier si VS Code est déjà installé
         if command -v code >/dev/null 2>&1; then
             print_message "✅ Visual Studio Code est déjà installé" "$GREEN"
         else
@@ -540,67 +536,13 @@ main() {
             fi
         fi
     fi
-
-    if ask_install "VSCodium" "Version libre de VS Code"; then
-        # Vérifier si VSCodium est déjà installé
-        if command -v codium >/dev/null 2>&1; then
-            print_message "✅ VSCodium est déjà installé" "$GREEN"
-        else
-            case "$DISTRO" in
-                arch)
-                    if [ -n "$AUR_HELPER" ]; then
-                        $AUR_HELPER -S --noconfirm vscodium-bin || {
-                            print_message "❌ Échec d'installation de VSCodium" "$RED"
-                        }
-                    else
-                        print_message "❌ Aucun helper AUR disponible pour installer VSCodium" "$RED"
-                    fi
-                    ;;
-                debian)
-                    # Vérifier si le dépôt VSCodium est déjà configuré
-                    if [ ! -f "/usr/share/keyrings/vscodium-archive-keyring.gpg" ]; then
-                        wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor | sudo dd of=/usr/share/keyrings/vscodium-archive-keyring.gpg
-                        echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' | sudo tee /etc/apt/sources.list.d/vscodium.list
-                        sudo apt update
-                    fi
-                    
-                    install_package "codium" "" "Version libre de VS Code" || {
-                        print_message "❌ Échec d'installation de VSCodium" "$RED"
-                    }
-                    ;;
-                *) 
-                    install_flatpak "com.vscodium.codium" "Version libre de VS Code" || {
-                        print_message "❌ Échec d'installation de VSCodium" "$RED"
-                    }
-                    ;;
-            esac
-        fi
-    fi
     
-    if ask_install "Neovim" "Éditeur de texte avancé"; then
-        # Vérifier si Neovim est déjà installé
-        if command -v nvim >/dev/null 2>&1; then
-            print_message "✅ Neovim est déjà installé" "$GREEN"
-        else
-            install_package "neovim" "" "Éditeur de texte modal" || {
-                print_message "❌ Échec d'installation de Neovim" "$RED"
-            }
-        fi
-    fi
-
-    if ask_install "Micro" "Éditeur de texte simple"; then
-        # Vérifier si Micro est déjà installé
-        if command -v micro >/dev/null 2>&1; then
-            print_message "✅ Micro est déjà installé" "$GREEN"
-        else
-            install_package "micro" "" "Éditeur de texte moderne" || {
-                print_message "❌ Échec d'installation de Micro" "$RED"
-            }
-        fi
-    fi
-
+    safe_install "VSCodium" "Version libre de VS Code" "codium" "com.vscodium.codium" "codium"
+    safe_install "Neovim" "Éditeur de texte avancé" "neovim" "" "nvim"
+    safe_install "Micro" "Éditeur de texte simple" "micro" "" "micro"
+    
+    # Helix (installation spéciale)
     if ask_install "Helix" "Éditeur de texte modal moderne"; then
-        # Vérifier si Helix est déjà installé
         if command -v hx >/dev/null 2>&1; then
             print_message "✅ Helix est déjà installé" "$GREEN"
         else
@@ -624,711 +566,434 @@ main() {
         fi
     fi
     
-    if ask_install "Helix" "Éditeur de texte modal moderne"; then
-        case "$DISTRO" in
-            arch) install_package "helix" ;;
-            *) 
-                # Installation via cargo si disponible
-                if command -v cargo >/dev/null 2>&1; then
-                    cargo install helix-term
-                else
-                    print_message "⚠️  Helix nécessite Rust/Cargo ou installation manuelle" "$YELLOW"
-                fi
-                ;;
-        esac
-    fi
-    
     # Terminaux
-    if ask_install "Kitty" "Émulateur de terminal moderne"; then
-        install_package "kitty" "" "Terminal avec support GPU"
-    fi
-    
-    if ask_install "Terminator" "Terminal avec support de division"; then
-        install_package "terminator" "" "Terminal multi-panneaux"
-    fi
-    
-    if ask_install "Alacritty" "Terminal accéléré GPU"; then
-        install_package "alacritty" "" "Terminal haute performance"
-    fi
+    safe_install "Kitty" "Émulateur de terminal moderne" "kitty" "" "kitty"
+    safe_install "Terminator" "Terminal avec support de division" "terminator" "" "terminator"
+    safe_install "Alacritty" "Terminal accéléré GPU" "alacritty" "" "alacritty"
     
     # Langages de programmation
     if ask_install "Node.js & NPM" "Runtime JavaScript"; then
         install_nodejs
     fi
     
-    if ask_install "Python & Pip" "Langage Python"; then
-        case "$DISTRO" in
-            arch) install_package "python python-pip" ;;
-            debian) install_package "python3 python3-pip" ;;
-            fedora) install_package "python3 python3-pip" ;;
-            opensuse) install_package "python3 python3-pip" ;;
-        esac
-    fi
+    safe_install "Python & Pip" "Langage Python" "python python-pip" "" "python3"
+    safe_install "Go" "Langage Go" "go" "" "go"
+    safe_install "Rust" "Langage Rust" "rust" "" "rustc"
+    safe_install "Java OpenJDK" "Machine virtuelle Java" "jdk-openjdk" "" "java"
     
-    if ask_install "Go" "Langage Go"; then
-        case "$DISTRO" in
-            arch) install_package "go" ;;
-            debian) install_package "golang-go" ;;
-            fedora) install_package "golang" ;;
-            opensuse) install_package "go" ;;
-        esac
-    fi
-    
-    if ask_install "Rust" "Langage Rust"; then
-        case "$DISTRO" in
-            arch) install_package "rust" ;;
-            debian) install_package "rustc" ;;
-            fedora) install_package "rust cargo" ;;
-            opensuse) install_package "rust cargo" ;;
-        esac
-    fi
-    
-    if ask_install "Java OpenJDK" "Machine virtuelle Java"; then
-        case "$DISTRO" in
-            arch) install_package "jdk-openjdk" ;;
-            debian) install_package "openjdk-17-jdk" ;;
-            fedora) install_package "java-17-openjdk-devel" ;;
-            opensuse) install_package "java-17-openjdk-devel" ;;
-        esac
-    fi
-    
+    # .NET SDK (installation spéciale)
     if ask_install ".NET SDK" "Framework Microsoft .NET"; then
-        case "$DISTRO" in
-            arch) install_package "dotnet-sdk" ;;
-            debian) 
-                wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-                sudo dpkg -i packages-microsoft-prod.deb
-                sudo apt update
-                sudo apt install -y dotnet-sdk-7.0
-                ;;
-            fedora) sudo dnf install -y dotnet-sdk-7.0 ;;
-            opensuse) sudo zypper install -y dotnet-sdk-7.0 ;;
-        esac
+        if command -v dotnet >/dev/null 2>&1; then
+            print_message "✅ .NET SDK est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) 
+                    install_package "dotnet-sdk" "" "Framework Microsoft .NET" || {
+                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                    }
+                    ;;
+                debian) 
+                    # Vérifier si le dépôt Microsoft est déjà configuré
+                    if [ ! -f "/etc/apt/trusted.gpg.d/packages.microsoft.gpg" ]; then
+                        wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+                        sudo dpkg -i packages-microsoft-prod.deb
+                        sudo apt update
+                    fi
+                    install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
+                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                    }
+                    ;;
+                fedora) 
+                    install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
+                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                    }
+                    ;;
+                opensuse) 
+                    install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
+                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                    }
+                    ;;
+            esac
+        fi
     fi
     
     # Outils de compilation
-    if ask_install "Outils de compilation" "GCC, G++, Clang, Make, CMake"; then
-        case "$DISTRO" in
-            arch) install_package "gcc make cmake clang gdb" ;;
-            debian) install_package "build-essential cmake clang gdb" ;;
-            fedora) install_package "gcc gcc-c++ make cmake clang gdb" ;;
-            opensuse) install_package "gcc gcc-c++ make cmake clang gdb" ;;
-        esac
-    fi
+    safe_install "Outils de compilation" "GCC, G++, Clang, Make, CMake" "gcc make cmake clang gdb" "" "gcc"
     
     # Outils de développement
-    if ask_install "Postman" "Client API"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm postman-bin
-                fi
-                ;;
-            *) install_flatpak "com.getpostman.Postman" "Client API" ;;
-        esac
-    fi
+    safe_install "Postman" "Client API" "postman-bin" "com.getpostman.Postman" "postman"
+    safe_install "SQLite Browser" "Explorateur de base de données SQLite" "sqlitebrowser" "" "sqlitebrowser"
     
-    if ask_install "SQLite Browser" "Explorateur de base de données SQLite"; then
-        case "$DISTRO" in
-            arch) install_package "sqlitebrowser" ;;
-            debian) install_package "sqlitebrowser" ;;
-            fedora) install_package "sqlitebrowser" ;;
-            opensuse) install_package "sqlitebrowser" ;;
-        esac
-    fi
-    
+    # Docker Desktop (installation spéciale)
     if ask_install "Docker Desktop" "Interface graphique Docker"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm docker-desktop
-                fi
-                ;;
-            debian)
-                wget https://desktop.docker.com/linux/main/amd64/docker-desktop-4.21.1-amd64.deb
-                sudo apt install -y ./docker-desktop-4.21.1-amd64.deb
-                ;;
-            *) print_message "⚠️  Docker Desktop non disponible pour cette distribution" "$YELLOW" ;;
-        esac
+        if command -v docker-desktop >/dev/null 2>&1; then
+            print_message "✅ Docker Desktop est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm docker-desktop || {
+                            print_message "❌ Échec d'installation de Docker Desktop" "$RED"
+                        }
+                    else
+                        print_message "❌ Aucun helper AUR disponible pour installer Docker Desktop" "$RED"
+                    fi
+                    ;;
+                debian)
+                    # Vérifier si le fichier .deb est déjà téléchargé
+                    if [ ! -f "docker-desktop-4.21.1-amd64.deb" ]; then
+                        wget https://desktop.docker.com/linux/main/amd64/docker-desktop-4.21.1-amd64.deb
+                    fi
+                    sudo apt install -y ./docker-desktop-4.21.1-amd64.deb || {
+                        print_message "❌ Échec d'installation de Docker Desktop" "$RED"
+                    }
+                    ;;
+                *) 
+                    print_message "⚠️  Docker Desktop non disponible pour cette distribution" "$YELLOW" 
+                    ;;
+            esac
+        fi
     fi
     
-    if ask_install "Lazygit" "Interface Git en terminal"; then
-        case "$DISTRO" in
-            arch) install_package "lazygit" ;;
-            debian) 
-                # Installation via GitHub release
-                LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-                curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-                tar xf lazygit.tar.gz lazygit
-                sudo install lazygit /usr/local/bin
-                ;;
-            fedora) install_package "lazygit" ;;
-            opensuse) install_package "lazygit" ;;
-        esac
-    fi
-    
-    # Moniteurs système
-    if ask_install "btop" "Moniteur système moderne"; then
-        install_package "btop" "" "Moniteur système avec interface moderne"
-    fi
-    
-    if ask_install "htop" "Moniteur système classique"; then
-        install_package "htop" "" "Moniteur système interactif"
-    fi
+    safe_install "Lazygit" "Interface Git en terminal" "lazygit" "" "lazygit"
+    safe_install "btop" "Moniteur système moderne" "btop" "" "btop"
+    safe_install "htop" "Moniteur système classique" "htop" "" "htop"
     
     # ==========================================
     # OUTILS DE PRISE DE NOTES
     # ==========================================
     print_section "📝 OUTILS DE PRISE DE NOTES"
     
-    if ask_install "Obsidian" "Prise de notes avec liens"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm obsidian
-                fi
-                ;;
-            *) install_flatpak "md.obsidian.Obsidian" "Prise de notes avec liens" ;;
-        esac
-    fi
-    
-    if ask_install "Joplin" "Application de notes open source"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm joplin-appimage
-                fi
-                ;;
-            *) install_flatpak "net.cozic.joplin_desktop" "Application de notes" ;;
-        esac
-    fi
+    safe_install "Obsidian" "Prise de notes avec liens" "obsidian" "md.obsidian.Obsidian" "obsidian"
+    safe_install "Joplin" "Application de notes open source" "joplin-appimage" "net.cozic.joplin_desktop" "joplin"
     
     # ==========================================
     # BUREAU ET UTILITAIRES SYSTÈME
     # ==========================================
     print_section "🖥️  BUREAU ET UTILITAIRES SYSTÈME"
     
-    if ask_install "GNOME Tweaks" "Personnalisation GNOME" && command -v gnome-shell >/dev/null 2>&1; then
-        install_package "gnome-tweaks" "" "Outil de personnalisation GNOME"
-    fi
-    
-    if ask_install "Stacer" "Optimiseur système"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm stacer
-                fi
-                ;;
-            *) install_flatpak "com.oguzhaninan.Stacer" "Optimiseur système" ;;
-        esac
-    fi
-    
-    if ask_install "BleachBit" "Nettoyeur système"; then
-        install_package "bleachbit" "" "Nettoyeur de fichiers système"
-    fi
-    
-    if ask_install "Timeshift" "Sauvegarde système"; then
-        case "$DISTRO" in
-            arch) install_package "timeshift" ;;
-            debian) install_package "timeshift" ;;
-            fedora) install_package "timeshift" ;;
-            opensuse) install_package "timeshift" ;;
-        esac
-    fi
-    
-    if ask_install "GParted" "Gestionnaire de partitions"; then
-        install_package "gparted" "" "Éditeur de partitions graphique"
-    fi
-    
-    if ask_install "ULauncher" "Lanceur d'applications"; then
-        case "$DISTRO" in
-            arch) install_package "ulauncher" ;;
-            debian) install_package "ulauncher" ;;
-            fedora) install_package "ulauncher" ;;
-            opensuse) install_package "ulauncher" ;;
-        esac
-    fi
-    
-    if ask_install "Flameshot" "Capture d'écran"; then
-        install_package "flameshot" "" "Outil de capture d'écran"
-    fi
+    safe_install "GNOME Tweaks" "Personnalisation GNOME" "gnome-tweaks" "" "gnome-tweaks"
+    safe_install "Stacer" "Optimiseur système" "stacer" "com.oguzhaninan.Stacer" "stacer"
+    safe_install "BleachBit" "Nettoyeur système" "bleachbit" "" "bleachbit"
+    safe_install "Timeshift" "Sauvegarde système" "timeshift" "" "timeshift"
+    safe_install "GParted" "Gestionnaire de partitions" "gparted" "" "gparted"
+    safe_install "ULauncher" "Lanceur d'applications" "ulauncher" "" "ulauncher"
+    safe_install "Flameshot" "Capture d'écran" "flameshot" "" "flameshot"
     
     # ==========================================
     # INTERNET ET COMMUNICATION
     # ==========================================
     print_section "🌐 INTERNET ET COMMUNICATION"
     
-    if ask_install "Firefox" "Navigateur web Mozilla"; then
-        install_package "firefox" "org.mozilla.firefox" "Navigateur web"
-    fi
+    safe_install "Firefox" "Navigateur web Mozilla" "firefox" "org.mozilla.firefox" "firefox"
+    safe_install "LibreWolf" "Firefox axé sur la vie privée" "librewolf-bin" "io.gitlab.librewolf-community" "librewolf"
+    safe_install "Brave Browser" "Navigateur axé sur la vie privée" "brave-bin" "com.brave.Browser" "brave-browser"
+    safe_install "Chromium" "Navigateur open source" "chromium" "org.chromium.Chromium" "chromium"
     
-    if ask_install "LibreWolf" "Firefox axé sur la vie privée"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm librewolf-bin
-                fi
-                ;;
-            *) install_flatpak "io.gitlab.librewolf-community" "Firefox axé sur la vie privée" ;;
-        esac
-    fi
-    
-    if ask_install "Brave Browser" "Navigateur axé sur la vie privée"; then
-        case "$DISTRO" in
-            arch) install_package "brave-bin" ;;
-            debian)
-                sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
-                echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
-                sudo apt update
-                sudo apt install -y brave-browser
-                ;;
-            fedora)
-                sudo dnf install -y dnf-plugins-core
-                sudo dnf config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/x86_64/
-                sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
-                sudo dnf install -y brave-browser
-                ;;
-            *) install_flatpak "com.brave.Browser" "Navigateur Brave" ;;
-        esac
-    fi
-    
-    if ask_install "Chromium" "Navigateur open source"; then
-        install_package "chromium" "org.chromium.Chromium" "Navigateur Chromium"
-    fi
-    
+    # Google Chrome (installation spéciale)
     if ask_install "Google Chrome" "Navigateur Google"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm google-chrome
-                fi
-                ;;
-            debian)
-                wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-                echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-                sudo apt update
-                sudo apt install -y google-chrome-stable
-                ;;
-            fedora)
-                sudo dnf install -y fedora-workstation-repositories
-                sudo dnf config-manager --set-enabled google-chrome
-                sudo dnf install -y google-chrome-stable
-                ;;
-            opensuse)
-                wget https://dl.google.com/linux/linux_signing_key.pub
-                sudo rpm --import linux_signing_key.pub
-                sudo zypper addrepo http://dl.google.com/linux/chrome/rpm/stable/x86_64 Google-Chrome
-                sudo zypper install -y google-chrome-stable
-                ;;
-        esac
+        if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then
+            print_message "✅ Google Chrome est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm google-chrome || {
+                            print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                        }
+                    else
+                        print_message "❌ Aucun helper AUR disponible pour installer Google Chrome" "$RED"
+                    fi
+                    ;;
+                debian)
+                    # Vérifier si le dépôt Google est déjà configuré
+                    if [ ! -f "/etc/apt/sources.list.d/google-chrome.list" ]; then
+                        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+                        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+                        sudo apt update
+                    fi
+                    install_package "google-chrome-stable" "" "Navigateur Google" || {
+                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                    }
+                    ;;
+                fedora)
+                    # Vérifier si le dépôt Google est déjà configuré
+                    if ! sudo dnf repolist | grep -q google-chrome; then
+                        sudo dnf install -y fedora-workstation-repositories
+                        sudo dnf config-manager --set-enabled google-chrome
+                    fi
+                    install_package "google-chrome-stable" "" "Navigateur Google" || {
+                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                    }
+                    ;;
+                opensuse)
+                    # Vérifier si le dépôt Google est déjà configuré
+                    if [ ! -f "/etc/zypp/repos.d/Google-Chrome.repo" ]; then
+                        wget https://dl.google.com/linux/linux_signing_key.pub
+                        sudo rpm --import linux_signing_key.pub
+                        sudo zypper addrepo http://dl.google.com/linux/chrome/rpm/stable/x86_64 Google-Chrome
+                    fi
+                    install_package "google-chrome-stable" "" "Navigateur Google" || {
+                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                    }
+                    ;;
+            esac
+        fi
     fi
     
+    # DuckDuckGo Browser
     if ask_install "DuckDuckGo Browser" "Navigateur axé sur la vie privée"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm duckduckgo-privacy-browser
-                fi
-                ;;
-            *) 
-                print_message "⚠️  DuckDuckGo Browser disponible principalement sur mobile" "$YELLOW"
-                print_message "💡 Configurez DuckDuckGo comme moteur de recherche par défaut dans votre navigateur" "$CYAN"
-                ;;
-        esac
+        if command -v duckduckgo >/dev/null 2>&1; then
+            print_message "✅ DuckDuckGo Browser est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm duckduckgo-privacy-browser || {
+                            print_message "❌ Échec d'installation de DuckDuckGo Browser" "$RED"
+                        }
+                    else
+                        print_message "❌ Aucun helper AUR disponible pour installer DuckDuckGo Browser" "$RED"
+                    fi
+                    ;;
+                *) 
+                    print_message "⚠️  DuckDuckGo Browser disponible principalement sur mobile" "$YELLOW"
+                    print_message "💡 Configurez DuckDuckGo comme moteur de recherche par défaut dans votre navigateur" "$CYAN"
+                    ;;
+            esac
+        fi
     fi
     
-    if ask_install "Discord" "Communication gaming"; then
-        case "$DISTRO" in
-            arch) install_package "discord" ;;
-            *) install_flatpak "com.discordapp.Discord" "Communication gaming" ;;
-        esac
-    fi
-    
-    if ask_install "Signal" "Messagerie sécurisée"; then
-        case "$DISTRO" in
-            arch) install_package "signal-desktop" ;;
-            *) install_flatpak "org.signal.Signal" "Messagerie sécurisée" ;;
-        esac
-    fi
-    
-    if ask_install "Telegram" "Messagerie instantanée"; then
-        case "$DISTRO" in
-            arch) install_package "telegram-desktop" ;;
-            *) install_flatpak "org.telegram.desktop" "Messagerie instantanée" ;;
-        esac
-    fi
-    
-    if ask_install "Element" "Client Matrix"; then
-        case "$DISTRO" in
-            arch) install_package "element-desktop" ;;
-            *) install_flatpak "im.riot.Riot" "Client Matrix" ;;
-        esac
-    fi
-    
-    if ask_install "Slack" "Communication professionnelle"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm slack-desktop
-                fi
-                ;;
-            *) install_flatpak "com.slack.Slack" "Communication professionnelle" ;;
-        esac
-    fi
-    
-    if ask_install "Thunderbird" "Client email"; then
-        install_package "thunderbird" "org.mozilla.Thunderbird" "Client de messagerie"
-    fi
+    safe_install "Discord" "Communication gaming" "discord" "com.discordapp.Discord" "discord"
+    safe_install "Signal" "Messagerie sécurisée" "signal-desktop" "org.signal.Signal" "signal-desktop"
+    safe_install "Telegram" "Messagerie instantanée" "telegram-desktop" "org.telegram.desktop" "telegram-desktop"
+    safe_install "Element" "Client Matrix" "element-desktop" "im.riot.Riot" "element-desktop"
+    safe_install "Slack" "Communication professionnelle" "slack-desktop" "com.slack.Slack" "slack"
+    safe_install "Thunderbird" "Client email" "thunderbird" "org.mozilla.Thunderbird" "thunderbird"
     
     # ==========================================
     # MULTIMÉDIA
     # ==========================================
     print_section "🎵 MULTIMÉDIA"
     
-    if ask_install "VLC" "Lecteur multimédia universel"; then
-        install_package "vlc" "org.videolan.VLC" "Lecteur multimédia"
-    fi
-    
-    if ask_install "MPV" "Lecteur vidéo minimaliste"; then
-        install_package "mpv" "" "Lecteur vidéo léger"
-    fi
-    
-    if ask_install "DeaDBeeF" "Lecteur audio léger"; then
-        case "$DISTRO" in
-            arch) install_package "deadbeef" ;;
-            *) install_flatpak "org.deadbeef.deadbeef" "Lecteur audio" ;;
-        esac
-    fi
-    
-    if ask_install "Lollypop" "Lecteur de musique moderne"; then
-        case "$DISTRO" in
-            arch) install_package "lollypop" ;;
-            *) install_flatpak "org.gnome.Lollypop" "Lecteur de musique" ;;
-        esac
-    fi
-    
-    if ask_install "Kdenlive" "Éditeur vidéo professionnel"; then
-        case "$DISTRO" in
-            arch) install_package "kdenlive" ;;
-            *) install_flatpak "org.kde.kdenlive" "Éditeur vidéo" ;;
-        esac
-    fi
-    
-    if ask_install "Shotcut" "Éditeur vidéo simple"; then
-        case "$DISTRO" in
-            arch) install_package "shotcut" ;;
-            *) install_flatpak "org.shotcut.Shotcut" "Éditeur vidéo simple" ;;
-        esac
-    fi
-    
-    if ask_install "OBS Studio" "Enregistrement et streaming"; then
-        case "$DISTRO" in
-            arch) install_package "obs-studio" ;;
-            *) install_flatpak "com.obsproject.Studio" "Enregistrement et streaming" ;;
-        esac
-    fi
-    
-    if ask_install "Audacity" "Éditeur audio"; then
-        case "$DISTRO" in
-            arch) install_package "audacity" ;;
-            *) install_flatpak "org.audacityteam.Audacity" "Éditeur audio" ;;
-        esac
-    fi
-    
-    if ask_install "EasyEffects" "Processeur audio en temps réel"; then
-        case "$DISTRO" in
-            arch) install_package "easyeffects" ;;
-            *) install_flatpak "com.github.wwmm.easyeffects" "Processeur audio" ;;
-        esac
-    fi
-    
-    if ask_install "Piper" "Configuration souris gaming"; then
-        case "$DISTRO" in
-            arch) install_package "piper" ;;
-            *) install_flatpak "org.freedesktop.Piper" "Configuration souris gaming" ;;
-        esac
-    fi
+    safe_install "VLC" "Lecteur multimédia universel" "vlc" "org.videolan.VLC" "vlc"
+    safe_install "MPV" "Lecteur vidéo minimaliste" "mpv" "" "mpv"
+    safe_install "DeaDBeeF" "Lecteur audio léger" "deadbeef" "org.deadbeef.deadbeef" "deadbeef"
+    safe_install "Lollypop" "Lecteur de musique moderne" "lollypop" "org.gnome.Lollypop" "lollypop"
+    safe_install "Kdenlive" "Éditeur vidéo professionnel" "kdenlive" "org.kde.kdenlive" "kdenlive"
+    safe_install "Shotcut" "Éditeur vidéo simple" "shotcut" "org.shotcut.Shotcut" "shotcut"
+    safe_install "OBS Studio" "Enregistrement et streaming" "obs-studio" "com.obsproject.Studio" "obs"
+    safe_install "Audacity" "Éditeur audio" "audacity" "org.audacityteam.Audacity" "audacity"
+    safe_install "EasyEffects" "Processeur audio en temps réel" "easyeffects" "com.github.wwmm.easyeffects" "easyeffects"
+    safe_install "Piper" "Configuration souris gaming" "piper" "org.freedesktop.Piper" "piper"
     
     # ==========================================
     # DESIGN ET IMAGE
     # ==========================================
     print_section "🎨 DESIGN ET IMAGE"
     
-    if ask_install "GIMP" "Éditeur d'image avancé"; then
-        case "$DISTRO" in
-            arch) install_package "gimp" ;;
-            *) install_flatpak "org.gimp.GIMP" "Éditeur d'image" ;;
-        esac
-    fi
-    
-    if ask_install "Krita" "Peinture numérique"; then
-        case "$DISTRO" in
-            arch) install_package "krita" ;;
-            *) install_flatpak "org.kde.krita" "Peinture numérique" ;;
-        esac
-    fi
-    
-    if ask_install "Inkscape" "Éditeur vectoriel"; then
-        case "$DISTRO" in
-            arch) install_package "inkscape" ;;
-            *) install_flatpak "org.inkscape.Inkscape" "Éditeur vectoriel" ;;
-        esac
-    fi
-    
-    if ask_install "darktable" "Traitement photo RAW"; then
-        case "$DISTRO" in
-            arch) install_package "darktable" ;;
-            *) install_flatpak "org.darktable.Darktable" "Traitement photo RAW" ;;
-        esac
-    fi
-    
-    if ask_install "Blender" "Modélisation 3D et animation"; then
-        case "$DISTRO" in
-            arch) install_package "blender" ;;
-            *) install_flatpak "org.blender.Blender" "Modélisation 3D" ;;
-        esac
-    fi
-    
-    if ask_install "ImageMagick" "Manipulation d'image en ligne de commande"; then
-        install_package "imagemagick" "" "Suite d'outils image CLI"
-    fi
+    safe_install "GIMP" "Éditeur d'image avancé" "gimp" "org.gimp.GIMP" "gimp"
+    safe_install "Krita" "Peinture numérique" "krita" "org.kde.krita" "krita"
+    safe_install "Inkscape" "Éditeur vectoriel" "inkscape" "org.inkscape.Inkscape" "inkscape"
+    safe_install "darktable" "Traitement photo RAW" "darktable" "org.darktable.Darktable" "darktable"
+    safe_install "Blender" "Modélisation 3D et animation" "blender" "org.blender.Blender" "blender"
+    safe_install "ImageMagick" "Manipulation d'image en ligne de commande" "imagemagick" "" "convert"
     
     # ==========================================
     # GAMING
     # ==========================================
     print_section "🎮 GAMING"
     
+    # Steam (installation spéciale)
     if ask_install "Steam" "Plateforme de jeux"; then
-        case "$DISTRO" in
-            arch) 
-                # Activation des dépôts multilib
-                sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
-                sudo pacman -Sy
-                install_package "steam"
-                ;;
-            debian)
-                # Activation des dépôts 32-bit
-                sudo dpkg --add-architecture i386
-                sudo apt update
-                install_package "steam"
-                ;;
-            fedora) 
-                sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-                install_package "steam"
-                ;;
-            *) install_flatpak "com.valvesoftware.Steam" "Plateforme de jeux Steam" ;;
-        esac
+        if command -v steam >/dev/null 2>&1; then
+            print_message "✅ Steam est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) 
+                    # Activation des dépôts multilib
+                    if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
+                        sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+                        sudo pacman -Sy
+                    fi
+                    install_package "steam" "" "Plateforme de jeux" || {
+                        print_message "❌ Échec d'installation de Steam" "$RED"
+                    }
+                    ;;
+                debian)
+                    # Activation des dépôts 32-bit
+                    if ! dpkg --print-foreign-architectures | grep -q i386; then
+                        sudo dpkg --add-architecture i386
+                        sudo apt update
+                    fi
+                    install_package "steam" "" "Plateforme de jeux" || {
+                        print_message "❌ Échec d'installation de Steam" "$RED"
+                    }
+                    ;;
+                fedora) 
+                    if ! rpm -q rpmfusion-free-release >/dev/null 2>&1; then
+                        sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+                    fi
+                    install_package "steam" "" "Plateforme de jeux" || {
+                        print_message "❌ Échec d'installation de Steam" "$RED"
+                    }
+                    ;;
+                *) 
+                    install_flatpak "com.valvesoftware.Steam" "Plateforme de jeux Steam" || {
+                        print_message "❌ Échec d'installation de Steam" "$RED"
+                    }
+                    ;;
+            esac
+        fi
     fi
     
-    if ask_install "Lutris" "Gestionnaire de jeux"; then
-        case "$DISTRO" in
-            arch) install_package "lutris" ;;
-            *) install_flatpak "net.lutris.Lutris" "Gestionnaire de jeux" ;;
-        esac
-    fi
-    
-    if ask_install "Heroic Games Launcher" "Client Epic Games et GOG"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm heroic-games-launcher-bin
-                fi
-                ;;
-            *) install_flatpak "com.heroicgameslauncher.hgl" "Client Epic/GOG" ;;
-        esac
-    fi
-    
-    if ask_install "ProtonUp-Qt" "Gestionnaire Proton"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm protonup-qt
-                fi
-                ;;
-            *) install_flatpak "net.davidotek.pupgui2" "Gestionnaire Proton" ;;
-        esac
-    fi
-    
-    if ask_install "GameMode" "Optimisations gaming"; then
-        case "$DISTRO" in
-            arch) install_package "gamemode" ;;
-            debian) install_package "gamemode" ;;
-            fedora) install_package "gamemode" ;;
-            opensuse) install_package "gamemode" ;;
-        esac
-    fi
-    
-    if ask_install "MangoHud" "Overlay de performance"; then
-        case "$DISTRO" in
-            arch) install_package "mangohud" ;;
-            debian) install_package "mangohud" ;;
-            fedora) install_package "mangohud" ;;
-            opensuse) install_package "mangohud" ;;
-        esac
-    fi
-    
-    if ask_install "Bottles" "Gestionnaire Wine"; then
-        case "$DISTRO" in
-            arch) install_package "bottles" ;;
-            *) install_flatpak "com.usebottles.bottles" "Gestionnaire Wine" ;;
-        esac
-    fi
-    
-    if ask_install "Wine Staging" "Couche de compatibilité Windows"; then
-        case "$DISTRO" in
-            arch) install_package "wine-staging" ;;
-            debian) install_package "wine" ;;
-            fedora) install_package "wine" ;;
-            opensuse) install_package "wine" ;;
-        esac
-    fi
-    
-    if ask_install "Winetricks" "Utilitaires Wine"; then
-        install_package "winetricks" "" "Scripts d'installation Wine"
-    fi
+    safe_install "Lutris" "Gestionnaire de jeux" "lutris" "net.lutris.Lutris" "lutris"
+    safe_install "Heroic Games Launcher" "Client Epic Games et GOG" "heroic-games-launcher-bin" "com.heroicgameslauncher.hgl" "heroic"
+    safe_install "ProtonUp-Qt" "Gestionnaire Proton" "protonup-qt" "net.davidotek.pupgui2" "protonup-qt"
+    safe_install "GameMode" "Optimisations gaming" "gamemode" "" "gamemoded"
+    safe_install "MangoHud" "Overlay de performance" "mangohud" "" "mangohud"
+    safe_install "Bottles" "Gestionnaire Wine" "bottles" "com.usebottles.bottles" "bottles"
+    safe_install "Wine Staging" "Couche de compatibilité Windows" "wine-staging" "" "wine"
+    safe_install "Winetricks" "Utilitaires Wine" "winetricks" "" "winetricks"
     
     # ==========================================
     # SÉCURITÉ
     # ==========================================
     print_section "🔒 SÉCURITÉ"
     
-    if ask_install "KeePassXC" "Gestionnaire de mots de passe"; then
-        case "$DISTRO" in
-            arch) install_package "keepassxc" ;;
-            *) install_flatpak "org.keepassxc.KeePassXC" "Gestionnaire de mots de passe" ;;
-        esac
-    fi
-    
-    if ask_install "GUFW" "Pare-feu graphique"; then
-        case "$DISTRO" in
-            arch) install_package "gufw" ;;
-            debian) install_package "gufw" ;;
-            fedora) install_package "firewall-config" ;;
-            opensuse) install_package "firewall-config" ;;
-        esac
-    fi
+    safe_install "KeePassXC" "Gestionnaire de mots de passe" "keepassxc" "org.keepassxc.KeePassXC" "keepassxc"
+    safe_install "GUFW" "Pare-feu graphique" "gufw" "" "gufw"
     
     # ==========================================
     # AUTRES OUTILS
     # ==========================================
     print_section "🛠️  AUTRES OUTILS"
     
-    if ask_install "Balena Etcher" "Création de médias bootables"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm balena-etcher
-                fi
-                ;;
-            *) install_flatpak "com.balena.Etcher" "Création de médias bootables" ;;
-        esac
-    fi
+    safe_install "Balena Etcher" "Création de médias bootables" "balena-etcher" "com.balena.Etcher" "balena-etcher"
+    safe_install "Popsicle" "Créateur USB (alternative Etcher)" "popsicle" "" "popsicle"
     
-    if ask_install "Popsicle" "Créateur USB (alternative Etcher)"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm popsicle
-                fi
-                ;;
-            debian) install_package "popsicle-gtk" ;;
-            *) print_message "⚠️  Popsicle non disponible pour cette distribution" "$YELLOW" ;;
-        esac
-    fi
-    
+    # VirtualBox (installation spéciale)
     if ask_install "VirtualBox" "Machine virtuelle"; then
-        case "$DISTRO" in
-            arch) 
-                install_package "virtualbox"
-                sudo modprobe vboxdrv
-                sudo usermod -aG vboxusers $USER
-                ;;
-            debian) install_package "virtualbox" ;;
-            fedora) install_package "VirtualBox" ;;
-            opensuse) install_package "virtualbox" ;;
-        esac
+        if command -v virtualbox >/dev/null 2>&1; then
+            print_message "✅ VirtualBox est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) 
+                    install_package "virtualbox" "" "Machine virtuelle" || {
+                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                    }
+                    if command -v virtualbox >/dev/null 2>&1; then
+                        sudo modprobe vboxdrv
+                        sudo usermod -aG vboxusers $USER
+                        print_message "✅ VirtualBox configuré avec succès" "$GREEN"
+                    fi
+                    ;;
+                debian) 
+                    install_package "virtualbox" "" "Machine virtuelle" || {
+                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                    }
+                    ;;
+                fedora) 
+                    install_package "VirtualBox" "" "Machine virtuelle" || {
+                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                    }
+                    ;;
+                opensuse) 
+                    install_package "virtualbox" "" "Machine virtuelle" || {
+                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                    }
+                    ;;
+            esac
+        fi
     fi
     
+    # QEMU/KVM (installation spéciale)
     if ask_install "QEMU/KVM" "Virtualisation native"; then
-        case "$DISTRO" in
-            arch) 
-                install_package "qemu-full virt-manager"
-                sudo systemctl enable libvirtd
-                sudo usermod -aG libvirt $USER
-                ;;
-            debian) 
-                install_package "qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager"
-                sudo usermod -aG libvirt $USER
-                ;;
-            fedora) 
-                install_package "qemu-kvm libvirt virt-manager"
-                sudo usermod -aG libvirt $USER
-                ;;
-            opensuse) 
-                install_package "qemu-kvm libvirt virt-manager"
-                sudo usermod -aG libvirt $USER
-                ;;
-        esac
+        if command -v virt-manager >/dev/null 2>&1; then
+            print_message "✅ QEMU/KVM est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) 
+                    install_package "qemu-full virt-manager" "" "Virtualisation native" || {
+                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                    }
+                    if command -v virt-manager >/dev/null 2>&1; then
+                        sudo systemctl enable libvirtd
+                        sudo usermod -aG libvirt $USER
+                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                    fi
+                    ;;
+                debian) 
+                    install_package "qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager" "" "Virtualisation native" || {
+                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                    }
+                    if command -v virt-manager >/dev/null 2>&1; then
+                        sudo usermod -aG libvirt $USER
+                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                    fi
+                    ;;
+                fedora) 
+                    install_package "qemu-kvm libvirt virt-manager" "" "Virtualisation native" || {
+                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                    }
+                    if command -v virt-manager >/dev/null 2>&1; then
+                        sudo usermod -aG libvirt $USER
+                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                    fi
+                    ;;
+                opensuse) 
+                    install_package "qemu-kvm libvirt virt-manager" "" "Virtualisation native" || {
+                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                    }
+                    if command -v virt-manager >/dev/null 2>&1; then
+                        sudo usermod -aG libvirt $USER
+                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                    fi
+                    ;;
+            esac
+        fi
     fi
     
+    # Spicetify-CLI
     if ask_install "Spicetify-CLI" "Personnalisation Spotify"; then
-        # Installation via curl
-        curl -fsSL https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.sh | sh
-        print_message "✅ Spicetify-CLI installé. Configurez-le avec 'spicetify config'" "$GREEN"
+        if command -v spicetify >/dev/null 2>&1; then
+            print_message "✅ Spicetify-CLI est déjà installé" "$GREEN"
+        else
+            # Installation via curl
+            curl -fsSL https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.sh | sh || {
+                print_message "❌ Échec d'installation de Spicetify-CLI" "$RED"
+            }
+            if command -v spicetify >/dev/null 2>&1; then
+                print_message "✅ Spicetify-CLI installé. Configurez-le avec 'spicetify config'" "$GREEN"
+            fi
+        fi
     fi
     
-    if ask_install "Snap" "Gestionnaire de paquets Snap"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm snapd
-                    sudo systemctl enable snapd.socket
-                fi
-                ;;
-            debian) install_package "snapd" ;;
-            fedora) install_package "snapd" ;;
-            opensuse) install_package "snapd" ;;
-        esac
-    fi
-    
-    if ask_install "AppImageLauncher" "Intégration AppImage"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm appimagelauncher
-                fi
-                ;;
-            debian)
-                wget https://github.com/TheAssassin/AppImageLauncher/releases/download/v2.2.0/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
-                sudo apt install -y ./appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
-                ;;
-            *) print_message "⚠️  AppImageLauncher non disponible via gestionnaire de paquets" "$YELLOW" ;;
-        esac
-    fi
+    safe_install "Snap" "Gestionnaire de paquets Snap" "snapd" "" "snap"
+    safe_install "AppImageLauncher" "Intégration AppImage" "appimagelauncher" "" "appimagelauncher"
     
     # ==========================================
     # OUTILS IA ET DÉVELOPPEMENT AVANCÉ
     # ==========================================
     print_section "🤖 OUTILS IA ET DÉVELOPPEMENT AVANCÉ"
     
-    if ask_install "GPT4All" "IA locale pour le code"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm gpt4all
-                fi
-                ;;
-            *) install_flatpak "io.gpt4all.gpt4all" "IA locale" ;;
-        esac
-    fi
+    safe_install "GPT4All" "IA locale pour le code" "gpt4all" "io.gpt4all.gpt4all" "gpt4all"
     
     # Installation d'outils IA via pip si Python est installé
     if command -v pip3 >/dev/null 2>&1; then
         if ask_install "Outils IA Python" "Codeium CLI, TabNine, etc."; then
-            pip3 install --user codeium
-            pip3 install --user openai
-            pip3 install --user anthropic
-            print_message "✅ Outils IA Python installés" "$GREEN"
+            pip3 install --user codeium || {
+                print_message "❌ Échec d'installation de Codeium" "$RED"
+            }
+            pip3 install --user openai || {
+                print_message "❌ Échec d'installation de OpenAI" "$RED"
+            }
+            pip3 install --user anthropic || {
+                print_message "❌ Échec d'installation de Anthropic" "$RED"
+            }
+            if pip3 list | grep -q codeium; then
+                print_message "✅ Outils IA Python installés" "$GREEN"
+            fi
         fi
     fi
     
@@ -1364,26 +1029,40 @@ main() {
     
     # Configuration de Zsh avec Oh My Zsh (optionnel)
     if ask_install "Oh My Zsh" "Framework Zsh avec thèmes et plugins"; then
-        # Installation de Zsh si nécessaire
-        case "$DISTRO" in
-            arch) install_package "zsh" ;;
-            debian) install_package "zsh" ;;
-            fedora) install_package "zsh" ;;
-            opensuse) install_package "zsh" ;;
-        esac
-        
-        # Installation d'Oh My Zsh
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-        
-        # Installation de plugins populaires
-        git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-        
-        # Configuration du .zshrc avec plugins
-        sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting docker docker-compose npm node python rust go)/' ~/.zshrc
-        
-        print_message "✅ Oh My Zsh installé avec plugins" "$GREEN"
-        print_message "ℹ️  Changez votre shell avec: chsh -s /bin/zsh" "$CYAN"
+        # Vérifier si Oh My Zsh est déjà installé
+        if [ -d "$HOME/.oh-my-zsh" ]; then
+            print_message "✅ Oh My Zsh est déjà installé" "$GREEN"
+        else
+            # Installation de Zsh si nécessaire
+            if ! command -v zsh >/dev/null 2>&1; then
+                safe_install "Zsh" "Shell avancé" "zsh" "" "zsh"
+            fi
+            
+            # Installation d'Oh My Zsh
+            if command -v zsh >/dev/null 2>&1; then
+                sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || {
+                    print_message "❌ Échec d'installation de Oh My Zsh" "$RED"
+                }
+                
+                if [ -d "$HOME/.oh-my-zsh" ]; then
+                    # Installation de plugins populaires
+                    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions || {
+                        print_message "⚠️  Échec du clonage de zsh-autosuggestions" "$YELLOW"
+                    }
+                    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting || {
+                        print_message "⚠️  Échec du clonage de zsh-syntax-highlighting" "$YELLOW"
+                    }
+                    
+                    # Configuration du .zshrc avec plugins
+                    if [ -f ~/.zshrc ]; then
+                        sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting docker docker-compose npm node python rust go)/' ~/.zshrc
+                    fi
+                    
+                    print_message "✅ Oh My Zsh installé avec plugins" "$GREEN"
+                    print_message "ℹ️  Changez votre shell avec: chsh -s /bin/zsh" "$CYAN"
+                fi
+            fi
+        fi
     fi
     
     # Message final
@@ -1407,7 +1086,7 @@ main() {
     
     # Nettoyage
     print_message "🧹 Nettoyage des fichiers temporaires..." "$BLUE"
-    rm -f packages-microsoft-prod.deb docker-desktop-*.deb lazygit.tar.gz appimagelauncher_*.deb
+    rm -f packages-microsoft-prod.deb docker-desktop-*.deb lazygit.tar.gz appimagelauncher_*.deb linux_signing_key.pub
     print_message "✅ Nettoyage terminé" "$GREEN"
 }
 
