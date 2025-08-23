@@ -3,8 +3,8 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 19.0
-# Mise à jour : 23/08/2025 à 21:41
+# Version: 23.0
+# Mise à jour : 23/08/2025 à 21:56
 
 set -e
 
@@ -578,11 +578,50 @@ main() {
     fi
     
     if ask_install "Neovim" "Éditeur de texte avancé"; then
-        install_package "neovim" "" "Éditeur de texte modal"
+        # Vérifier si Neovim est déjà installé
+        if command -v nvim >/dev/null 2>&1; then
+            print_message "✅ Neovim est déjà installé" "$GREEN"
+        else
+            install_package "neovim" "" "Éditeur de texte modal" || {
+                print_message "❌ Échec d'installation de Neovim" "$RED"
+            }
+        fi
     fi
-    
+
     if ask_install "Micro" "Éditeur de texte simple"; then
-        install_package "micro" "" "Éditeur de texte moderne"
+        # Vérifier si Micro est déjà installé
+        if command -v micro >/dev/null 2>&1; then
+            print_message "✅ Micro est déjà installé" "$GREEN"
+        else
+            install_package "micro" "" "Éditeur de texte moderne" || {
+                print_message "❌ Échec d'installation de Micro" "$RED"
+            }
+        fi
+    fi
+
+    if ask_install "Helix" "Éditeur de texte modal moderne"; then
+        # Vérifier si Helix est déjà installé
+        if command -v hx >/dev/null 2>&1; then
+            print_message "✅ Helix est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch) 
+                    install_package "helix" "" "Éditeur de texte modal moderne" || {
+                        print_message "❌ Échec d'installation de Helix" "$RED"
+                    }
+                    ;;
+                *) 
+                    # Installation via cargo si disponible
+                    if command -v cargo >/dev/null 2>&1; then
+                        cargo install helix-term || {
+                            print_message "❌ Échec d'installation de Helix via cargo" "$RED"
+                        }
+                    else
+                        print_message "⚠️  Helix nécessite Rust/Cargo ou installation manuelle" "$YELLOW"
+                    fi
+                    ;;
+            esac
+        fi
     fi
     
     if ask_install "Helix" "Éditeur de texte modal moderne"; then
