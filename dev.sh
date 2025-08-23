@@ -3,7 +3,8 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 45.0
+# Version: 15.0
+# Mise à jour : 23/08/2025 à 19:31
 
 set -e
 
@@ -109,11 +110,54 @@ detect_distro() {
     fi
 }
 
+# Fonction pour vérifier si un paquet est déjà installé
+is_package_installed() {
+    local package="$1"
+    case "$DISTRO" in
+        arch)
+            pacman -Qi "$package" >/dev/null 2>&1
+            ;;
+        debian)
+            dpkg -s "$package" >/dev/null 2>&1
+            ;;
+        fedora)
+            rpm -q "$package" >/dev/null 2>&1
+            ;;
+        opensuse)
+            rpm -q "$package" >/dev/null 2>&1
+            ;;
+    esac
+}
+
+# Fonction pour vérifier si un flatpak est installé
+is_flatpak_installed() {
+    local flatpak_id="$1"
+    flatpak info "$flatpak_id" >/dev/null 2>&1
+}
+
+# Fonction pour vérifier si un binaire est disponible
+is_binary_available() {
+    local binary="$1"
+    command -v "$binary" >/dev/null 2>&1
+}
+
 # Installation selon la distribution
 install_package() {
     local package="$1"
     local flatpak_package="$2"
     local description="$3"
+    
+    # Vérifier si le paquet est déjà installé
+    if is_package_installed "$package" || is_binary_available "$package"; then
+        print_message "✅ $package est déjà installé" "$GREEN"
+        return 0
+    fi
+    
+    # Vérifier si le flatpak est déjà installé
+    if [ -n "$flatpak_package" ] && is_flatpak_installed "$flatpak_package"; then
+        print_message "✅ $flatpak_package (flatpak) est déjà installé" "$GREEN"
+        return 0
+    fi
     
     print_message "📦 Installation de $package..." "$BLUE"
     
@@ -176,6 +220,11 @@ install_flatpak() {
         return 1
     fi
     
+    if is_flatpak_installed "$package"; then
+        print_message "✅ $package (flatpak) est déjà installé" "$GREEN"
+        return 0
+    fi
+    
     print_message "📦 Installation de $package via Flatpak..." "$BLUE"
     flatpak install -y flathub "$package" || {
         print_message "❌ Échec d'installation de $package" "$RED"
@@ -183,6 +232,7 @@ install_flatpak() {
     }
     print_message "✅ $package installé avec succès" "$GREEN"
 }
+
 
 # Installation Node.js avec NVM
 install_nodejs() {
