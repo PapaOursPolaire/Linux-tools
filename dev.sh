@@ -3,7 +3,7 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 15.0
+# Version: 16.0
 # Mise à jour : 23/08/2025 à 19:31
 
 set -e
@@ -116,15 +116,19 @@ is_package_installed() {
     case "$DISTRO" in
         arch)
             pacman -Qi "$package" >/dev/null 2>&1
+            return $?
             ;;
         debian)
             dpkg -s "$package" >/dev/null 2>&1
+            return $?
             ;;
         fedora)
             rpm -q "$package" >/dev/null 2>&1
+            return $?
             ;;
         opensuse)
             rpm -q "$package" >/dev/null 2>&1
+            return $?
             ;;
     esac
 }
@@ -133,12 +137,14 @@ is_package_installed() {
 is_flatpak_installed() {
     local flatpak_id="$1"
     flatpak info "$flatpak_id" >/dev/null 2>&1
+    return $?
 }
 
 # Fonction pour vérifier si un binaire est disponible
 is_binary_available() {
     local binary="$1"
     command -v "$binary" >/dev/null 2>&1
+    return $?
 }
 
 # Installation selon la distribution
@@ -208,6 +214,7 @@ install_package() {
     esac
     
     print_message "✅ $package installé avec succès" "$GREEN"
+    return 0
 }
 
 # Installation via Flatpak uniquement
@@ -231,6 +238,7 @@ install_flatpak() {
         return 1
     }
     print_message "✅ $package installé avec succès" "$GREEN"
+    return 0
 }
 
 
@@ -385,31 +393,38 @@ main() {
     
     # Docker
     if ask_install "Docker" "Conteneurisation"; then
-        case "$DISTRO" in
-            arch)
-                install_package "docker"
-                sudo systemctl enable docker
-                sudo usermod -aG docker $USER
-                ;;
-            debian)
-                # Installation via le dépôt officiel Docker
-                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                sudo apt update
-                sudo apt install -y docker-ce docker-ce-cli containerd.io
-                sudo usermod -aG docker $USER
-                ;;
-            fedora)
-                sudo dnf install -y docker-ce docker-ce-cli containerd.io
-                sudo systemctl enable docker
-                sudo usermod -aG docker $USER
-                ;;
-            opensuse)
-                sudo zypper install -y docker
-                sudo systemctl enable docker
-                sudo usermod -aG docker $USER
-                ;;
-        esac
+        # Vérifier si Docker est déjà installé
+        if is_binary_available "docker"; then
+            print_message "✅ Docker est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    install_package "docker"
+                    sudo systemctl enable docker
+                    sudo usermod -aG docker $USER
+                    ;;
+                debian)
+                    # Installation via le dépôt officiel Docker
+                    if ! is_package_installed "docker-ce"; then
+                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                        sudo apt update
+                    fi
+                    install_package "docker-ce docker-ce-cli containerd.io"
+                    sudo usermod -aG docker $USER
+                    ;;
+                fedora)
+                    install_package "docker-ce docker-ce-cli containerd.io"
+                    sudo systemctl enable docker
+                    sudo usermod -aG docker $USER
+                    ;;
+                opensuse)
+                    install_package "docker"
+                    sudo systemctl enable docker
+                    sudo usermod -aG docker $USER
+                    ;;
+            esac
+        fi
     fi
     
     if ask_install "Docker Compose" "Orchestration de conteneurs"; then
