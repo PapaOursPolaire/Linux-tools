@@ -3,7 +3,7 @@
 # Script d'installation universelle pour développeurs Linux
 # Compatible avec Arch/Manjaro, Ubuntu/Debian, Fedora, openSUSE
 # Auteur: PapaOursPolaire - GitHub
-# Version: 18.0
+# Version: 19.0
 # Mise à jour : 23/08/2025 à 21:41
 
 set -e
@@ -483,52 +483,98 @@ main() {
         
     # Éditeurs de code
     if ask_install "Visual Studio Code" "Éditeur de code Microsoft"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm visual-studio-code-bin
-                fi
-                ;;
-            debian)
-                wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-                sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-                sudo apt update
-                sudo apt install -y code
-                ;;
-            fedora)
-                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-                sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-                sudo dnf install -y code
-                ;;
-            opensuse)
-                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-                sudo zypper addrepo https://packages.microsoft.com/yumrepos/vscode vscode
-                sudo zypper install -y code
-                ;;
-        esac
-        
-        # Installation des extensions VS Code
-        if ask_install "Extensions VS Code" "Toutes les extensions recommandées"; then
-            install_vscode_extensions
+        # Vérifier si VS Code est déjà installé
+        if command -v code >/dev/null 2>&1; then
+            print_message "✅ Visual Studio Code est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm visual-studio-code-bin || {
+                            print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                        }
+                    else
+                        print_message "❌ Aucun helper AUR disponible pour installer Visual Studio Code" "$RED"
+                    fi
+                    ;;
+                debian)
+                    # Vérifier si le dépôt Microsoft est déjà configuré
+                    if [ ! -f "/etc/apt/trusted.gpg.d/packages.microsoft.gpg" ]; then
+                        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+                        sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+                        sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+                        sudo apt update
+                    fi
+                    
+                    install_package "code" "" "Éditeur de code Microsoft" || {
+                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                    }
+                    ;;
+                fedora)
+                    # Vérifier si le dépôt Microsoft est déjà configuré
+                    if [ ! -f "/etc/yum.repos.d/vscode.repo" ]; then
+                        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+                        sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+                    fi
+                    
+                    install_package "code" "" "Éditeur de code Microsoft" || {
+                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                    }
+                    ;;
+                opensuse)
+                    # Vérifier si le dépôt Microsoft est déjà configuré
+                    if [ ! -f "/etc/zypp/repos.d/vscode.repo" ]; then
+                        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+                        sudo zypper addrepo https://packages.microsoft.com/yumrepos/vscode vscode
+                    fi
+                    
+                    install_package "code" "" "Éditeur de code Microsoft" || {
+                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                    }
+                    ;;
+            esac
+            
+            # Installation des extensions VS Code seulement si VS Code a été installé avec succès
+            if command -v code >/dev/null 2>&1 && ask_install "Extensions VS Code" "Toutes les extensions recommandées"; then
+                install_vscode_extensions
+            fi
         fi
     fi
-    
+
     if ask_install "VSCodium" "Version libre de VS Code"; then
-        case "$DISTRO" in
-            arch)
-                if [ -n "$AUR_HELPER" ]; then
-                    $AUR_HELPER -S --noconfirm vscodium-bin
-                fi
-                ;;
-            debian)
-                wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor | sudo dd of=/usr/share/keyrings/vscodium-archive-keyring.gpg
-                echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' | sudo tee /etc/apt/sources.list.d/vscodium.list
-                sudo apt update
-                sudo apt install -y codium
-                ;;
-            *) install_flatpak "com.vscodium.codium" "Version libre de VS Code" ;;
-        esac
+        # Vérifier si VSCodium est déjà installé
+        if command -v codium >/dev/null 2>&1; then
+            print_message "✅ VSCodium est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm vscodium-bin || {
+                            print_message "❌ Échec d'installation de VSCodium" "$RED"
+                        }
+                    else
+                        print_message "❌ Aucun helper AUR disponible pour installer VSCodium" "$RED"
+                    fi
+                    ;;
+                debian)
+                    # Vérifier si le dépôt VSCodium est déjà configuré
+                    if [ ! -f "/usr/share/keyrings/vscodium-archive-keyring.gpg" ]; then
+                        wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor | sudo dd of=/usr/share/keyrings/vscodium-archive-keyring.gpg
+                        echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' | sudo tee /etc/apt/sources.list.d/vscodium.list
+                        sudo apt update
+                    fi
+                    
+                    install_package "codium" "" "Version libre de VS Code" || {
+                        print_message "❌ Échec d'installation de VSCodium" "$RED"
+                    }
+                    ;;
+                *) 
+                    install_flatpak "com.vscodium.codium" "Version libre de VS Code" || {
+                        print_message "❌ Échec d'installation de VSCodium" "$RED"
+                    }
+                    ;;
+            esac
+        fi
     fi
     
     if ask_install "Neovim" "Éditeur de texte avancé"; then
