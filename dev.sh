@@ -57,7 +57,7 @@ ask_install() {
 
 # Détection de la distribution
 detect_distro() {
-    print_message "🔍 Détection de la distribution..." "$BLUE"
+    print_message "Détection de la distribution..." "$BLUE"
     
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -85,7 +85,7 @@ detect_distro() {
                 PACKAGE_MANAGER="zypper"
                 ;;
             *)
-                print_message "⚠️  Distribution non reconnue: $ID" "$RED"
+                print_message "Distribution non reconnue: $ID" "$RED"
                 print_message "Le script tentera d'utiliser les gestionnaires de paquets disponibles" "$YELLOW"
                 ;;
         esac
@@ -96,15 +96,15 @@ detect_distro() {
         FLATPAK_AVAILABLE=true
     fi
     
-    print_message "✅ Distribution détectée: $DISTRO" "$GREEN"
+    print_message "Distribution détectée: $DISTRO" "$GREEN"
     if [ -n "$AUR_HELPER" ]; then
-        print_message "✅ Helper AUR détecté: $AUR_HELPER" "$GREEN"
+        print_message "Helper AUR détecté: $AUR_HELPER" "$GREEN"
     elif [ -n "$PACKAGE_MANAGER" ]; then
-        print_message "✅ Gestionnaire de paquets: $PACKAGE_MANAGER" "$GREEN"
+        print_message "Gestionnaire de paquets: $PACKAGE_MANAGER" "$GREEN"
     fi
     
     if $FLATPAK_AVAILABLE; then
-        print_message "✅ Flatpak disponible" "$GREEN"
+        print_message "Flatpak disponible" "$GREEN"
     fi
 }
 
@@ -153,28 +153,28 @@ install_package() {
     
     # Vérifier si le paquet est déjà installé
     if is_package_installed "$package" || is_binary_available "$package"; then
-        print_message "✅ $package est déjà installé" "$GREEN"
+        print_message "$package est déjà installé" "$GREEN"
         return 0
     fi
     
     # Vérifier si le flatpak est déjà installé
     if [ -n "$flatpak_package" ] && is_flatpak_installed "$flatpak_package"; then
-        print_message "✅ $flatpak_package (flatpak) est déjà installé" "$GREEN"
+        print_message "$flatpak_package (flatpak) est déjà installé" "$GREEN"
         return 0
     fi
     
-    print_message "📦 Installation de $package..." "$BLUE"
+    print_message "Installation de $package..." "$BLUE"
     
     case "$DISTRO" in
         arch)
             if [ -n "$AUR_HELPER" ]; then
                 $AUR_HELPER -S --noconfirm "$package" || {
-                    print_message "❌ Échec d'installation via $AUR_HELPER" "$RED"
+                    print_message "Échec d'installation via $AUR_HELPER" "$RED"
                     return 1
                 }
             else
                 sudo pacman -S --noconfirm "$package" || {
-                    print_message "❌ Échec d'installation via pacman" "$RED"
+                    print_message "Échec d'installation via pacman" "$RED"
                     return 1
                 }
             fi
@@ -182,13 +182,13 @@ install_package() {
         debian)
             sudo apt update && sudo apt install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
-                    print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
+                    print_message "Tentative via Flatpak..." "$YELLOW"
                     flatpak install -y flathub "$flatpak_package" || {
-                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        print_message "Échec d'installation via Flatpak" "$RED"
                         return 1
                     }
                 else
-                    print_message "❌ Échec d'installation via apt" "$RED"
+                    print_message "Échec d'installation via apt" "$RED"
                     return 1
                 fi
             }
@@ -196,13 +196,13 @@ install_package() {
         fedora)
             sudo dnf install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
-                    print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
+                    print_message "Tentative via Flatpak..." "$YELLOW"
                     flatpak install -y flathub "$flatpak_package" || {
-                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        print_message "Échec d'installation via Flatpak" "$RED"
                         return 1
                     }
                 else
-                    print_message "❌ Échec d'installation via dnf" "$RED"
+                    print_message "Échec d'installation via dnf" "$RED"
                     return 1
                 fi
             }
@@ -210,20 +210,20 @@ install_package() {
         opensuse)
             sudo zypper install -y "$package" || {
                 if [ -n "$flatpak_package" ] && $FLATPAK_AVAILABLE; then
-                    print_message "⚠️  Tentative via Flatpak..." "$YELLOW"
+                    print_message "Tentative via Flatpak..." "$YELLOW"
                     flatpak install -y flathub "$flatpak_package" || {
-                        print_message "❌ Échec d'installation via Flatpak" "$RED"
+                        print_message "Échec d'installation via Flatpak" "$RED"
                         return 1
                     }
                 else
-                    print_message "❌ Échec d'installation via zypper" "$RED"
+                    print_message "Échec d'installation via zypper" "$RED"
                     return 1
                 fi
             }
             ;;
     esac
     
-    print_message "✅ $package installé avec succès" "$GREEN"
+    print_message "$package installé avec succès" "$GREEN"
     return 0
 }
 
@@ -233,21 +233,21 @@ install_flatpak() {
     local description="$2"
     
     if ! $FLATPAK_AVAILABLE; then
-        print_message "❌ Flatpak non disponible pour $package" "$RED"
+        print_message "Flatpak non disponible pour $package" "$RED"
         return 1
     fi
     
     if is_flatpak_installed "$package"; then
-        print_message "✅ $package (flatpak) est déjà installé" "$GREEN"
+        print_message "$package (flatpak) est déjà installé" "$GREEN"
         return 0
     fi
     
-    print_message "📦 Installation de $package via Flatpak..." "$BLUE"
+    print_message "Installation de $package via Flatpak..." "$BLUE"
     flatpak install -y flathub "$package" || {
-        print_message "❌ Échec d'installation de $package" "$RED"
+        print_message "Échec d'installation de $package" "$RED"
         return 1
     }
-    print_message "✅ $package installé avec succès" "$GREEN"
+    print_message "$package installé avec succès" "$GREEN"
     return 0
 }
 
@@ -265,24 +265,24 @@ safe_install() {
         
         # Vérifier si le logiciel est déjà installé
         if command -v "$check_binary" >/dev/null 2>&1; then
-            print_message "✅ $name est déjà installé" "$GREEN"
+            print_message "$name est déjà installé" "$GREEN"
             return 0
         fi
         
         # Essayer d'installer via le gestionnaire de paquets
         if [ -n "$package_name" ]; then
             install_package "$package_name" "$flatpak_id" "$description" || {
-                print_message "❌ Échec d'installation de $name" "$RED"
+                print_message "Échec d'installation de $name" "$RED"
                 return 1
             }
         # Sinon essayer via flatpak
         elif [ -n "$flatpak_id" ] && $FLATPAK_AVAILABLE; then
             install_flatpak "$flatpak_id" "$description" || {
-                print_message "❌ Échec d'installation de $name" "$RED"
+                print_message "Échec d'installation de $name" "$RED"
                 return 1
             }
         else
-            print_message "❌ Aucune méthode d'installation disponible pour $name" "$RED"
+            print_message "Aucune méthode d'installation disponible pour $name" "$RED"
             return 1
         fi
     fi
@@ -293,11 +293,11 @@ safe_install() {
 install_nodejs() {
     # Vérifier si Node.js est déjà installé via NVM ou autre
     if command -v node >/dev/null 2>&1; then
-        print_message "✅ Node.js est déjà installé" "$GREEN"
+        print_message "Node.js est déjà installé" "$GREEN"
         return 0
     fi
     
-    print_message "📦 Installation de Node.js via NVM..." "$BLUE"
+    print_message "Installation de Node.js via NVM..." "$BLUE"
     
     # Installation de NVM
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -309,17 +309,17 @@ install_nodejs() {
     nvm use --lts
     nvm alias default node
     
-    print_message "✅ Node.js installé avec succès" "$GREEN"
+    print_message "Node.js installé avec succès" "$GREEN"
 }
 
 # Installation des extensions VS Code
 install_vscode_extensions() {
     if ! command -v code >/dev/null 2>&1; then
-        print_message "❌ VS Code n'est pas installé, impossible d'installer les extensions" "$RED"
+        print_message "VS Code n'est pas installé, impossible d'installer les extensions" "$RED"
         return 1
     fi
     
-    print_message "📦 Installation des extensions VS Code..." "$BLUE"
+    print_message "Installation des extensions VS Code..." "$BLUE"
     
     extensions=(
         "ms-python.python" "ms-vscode.cpptools" "redhat.java" "golang.go"
@@ -341,11 +341,11 @@ install_vscode_extensions() {
     for ext in "${extensions[@]}"; do
         print_message "Installation extension: $ext" "$BLUE"
         code --install-extension "$ext" --force || {
-            print_message "⚠️  Échec installation extension: $ext" "$YELLOW"
+            print_message "Échec installation extension: $ext" "$YELLOW"
         }
     done
     
-    print_message "✅ Extensions VS Code installées" "$GREEN"
+    print_message "Extensions VS Code installées" "$GREEN"
 }
 
 # Configuration de Flatpak
@@ -373,37 +373,37 @@ setup_flatpak() {
         # Ajout du dépôt Flathub
         flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
         FLATPAK_AVAILABLE=true
-        print_message "✅ Flatpak configuré avec Flathub" "$GREEN"
+        print_message "Flatpak configuré avec Flathub" "$GREEN"
     fi
 }
 
 # Script principal
 main() {
-    print_message "🚀 Script d'installation pour développeurs Linux" "$PURPLE"
+    print_message "Script d'installation pour développeurs Linux" "$PURPLE"
     print_message "Ce script va installer tous les outils nécessaires au développement" "$CYAN"
     echo ""
     
     # Mise à jour du système
-    print_message "🔄 Mise à jour du système..." "$BLUE"
+    print_message "Mise à jour du système..." "$BLUE"
     case "$DISTRO" in
         arch)
             sudo pacman -Syu --noconfirm || {
-                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+                print_message "Échec de la mise à jour du système" "$YELLOW"
             }
             ;;
         debian)
             sudo apt update && sudo apt upgrade -y || {
-                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+                print_message "Échec de la mise à jour du système" "$YELLOW"
             }
             ;;
         fedora)
             sudo dnf upgrade -y || {
-                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+                print_message "Échec de la mise à jour du système" "$YELLOW"
             }
             ;;
         opensuse)
             sudo zypper refresh && sudo zypper update -y || {
-                print_message "⚠️  Échec de la mise à jour du système" "$YELLOW"
+                print_message "Échec de la mise à jour du système" "$YELLOW"
             }
             ;;
     esac
@@ -413,9 +413,7 @@ main() {
         setup_flatpak
     fi
     
-    # ==========================================
     # DÉVELOPPEMENT
-    # ==========================================
     print_section "🛠️  OUTILS DE DÉVELOPPEMENT"
     
     # Git et Git LFS
@@ -425,17 +423,17 @@ main() {
     # Docker
     if ask_install "Docker" "Conteneurisation"; then
         if command -v docker >/dev/null 2>&1; then
-            print_message "✅ Docker est déjà installé" "$GREEN"
+            print_message "Docker est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
                     install_package "docker" "" "Moteur de conteneurisation" || {
-                        print_message "❌ Échec d'installation de Docker" "$RED"
+                        print_message "Échec d'installation de Docker" "$RED"
                     }
                     if command -v docker >/dev/null 2>&1; then
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
-                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                        print_message "Docker configuré avec succès" "$GREEN"
                     fi
                     ;;
                 debian)
@@ -449,27 +447,27 @@ main() {
                     # Installer Docker
                     if install_package "docker-ce docker-ce-cli containerd.io" "" "Moteur de conteneurisation"; then
                         sudo usermod -aG docker $USER
-                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                        print_message "Docker configuré avec succès" "$GREEN"
                     else
-                        print_message "❌ Échec d'installation de Docker" "$RED"
+                        print_message "Échec d'installation de Docker" "$RED"
                     fi
                     ;;
                 fedora)
                     if install_package "docker-ce docker-ce-cli containerd.io" "" "Moteur de conteneurisation"; then
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
-                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                        print_message "Docker configuré avec succès" "$GREEN"
                     else
-                        print_message "❌ Échec d'installation de Docker" "$RED"
+                        print_message "Échec d'installation de Docker" "$RED"
                     fi
                     ;;
                 opensuse)
                     if install_package "docker" "" "Moteur de conteneurisation"; then
                         sudo systemctl enable docker
                         sudo usermod -aG docker $USER
-                        print_message "✅ Docker configuré avec succès" "$GREEN"
+                        print_message "Docker configuré avec succès" "$GREEN"
                     else
-                        print_message "❌ Échec d'installation de Docker" "$RED"
+                        print_message "Échec d'installation de Docker" "$RED"
                     fi
                     ;;
             esac
@@ -481,16 +479,16 @@ main() {
     # Éditeurs de code
     if ask_install "Visual Studio Code" "Éditeur de code Microsoft"; then
         if command -v code >/dev/null 2>&1; then
-            print_message "✅ Visual Studio Code est déjà installé" "$GREEN"
+            print_message "Visual Studio Code est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
                     if [ -n "$AUR_HELPER" ]; then
                         $AUR_HELPER -S --noconfirm visual-studio-code-bin || {
-                            print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                            print_message "Échec d'installation de Visual Studio Code" "$RED"
                         }
                     else
-                        print_message "❌ Aucun helper AUR disponible pour installer Visual Studio Code" "$RED"
+                        print_message "Aucun helper AUR disponible pour installer Visual Studio Code" "$RED"
                     fi
                     ;;
                 debian)
@@ -503,7 +501,7 @@ main() {
                     fi
                     
                     install_package "code" "" "Éditeur de code Microsoft" || {
-                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                        print_message "Échec d'installation de Visual Studio Code" "$RED"
                     }
                     ;;
                 fedora)
@@ -514,7 +512,7 @@ main() {
                     fi
                     
                     install_package "code" "" "Éditeur de code Microsoft" || {
-                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                        print_message "Échec d'installation de Visual Studio Code" "$RED"
                     }
                     ;;
                 opensuse)
@@ -525,7 +523,7 @@ main() {
                     fi
                     
                     install_package "code" "" "Éditeur de code Microsoft" || {
-                        print_message "❌ Échec d'installation de Visual Studio Code" "$RED"
+                        print_message "Échec d'installation de Visual Studio Code" "$RED"
                     }
                     ;;
             esac
@@ -544,7 +542,7 @@ main() {
     # Helix (installation spéciale)
     if ask_install "Helix" "Éditeur de texte modal moderne"; then
         if command -v hx >/dev/null 2>&1; then
-            print_message "✅ Helix est déjà installé" "$GREEN"
+            print_message "Helix est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch) 
@@ -559,7 +557,7 @@ main() {
                             print_message "❌ Échec d'installation de Helix via cargo" "$RED"
                         }
                     else
-                        print_message "⚠️  Helix nécessite Rust/Cargo ou installation manuelle" "$YELLOW"
+                        print_message "Helix nécessite Rust/Cargo ou installation manuelle" "$YELLOW"
                     fi
                     ;;
             esac
@@ -584,12 +582,12 @@ main() {
     # .NET SDK (installation spéciale)
     if ask_install ".NET SDK" "Framework Microsoft .NET"; then
         if command -v dotnet >/dev/null 2>&1; then
-            print_message "✅ .NET SDK est déjà installé" "$GREEN"
+            print_message ".NET SDK est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch) 
                     install_package "dotnet-sdk" "" "Framework Microsoft .NET" || {
-                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                        print_message "Échec d'installation de .NET SDK" "$RED"
                     }
                     ;;
                 debian) 
@@ -600,17 +598,17 @@ main() {
                         sudo apt update
                     fi
                     install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
-                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                        print_message "Échec d'installation de .NET SDK" "$RED"
                     }
                     ;;
                 fedora) 
                     install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
-                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                        print_message "Échec d'installation de .NET SDK" "$RED"
                     }
                     ;;
                 opensuse) 
                     install_package "dotnet-sdk-7.0" "" "Framework Microsoft .NET" || {
-                        print_message "❌ Échec d'installation de .NET SDK" "$RED"
+                        print_message "Échec d'installation de .NET SDK" "$RED"
                     }
                     ;;
             esac
@@ -627,16 +625,16 @@ main() {
     # Docker Desktop (installation spéciale)
     if ask_install "Docker Desktop" "Interface graphique Docker"; then
         if command -v docker-desktop >/dev/null 2>&1; then
-            print_message "✅ Docker Desktop est déjà installé" "$GREEN"
+            print_message "Docker Desktop est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
                     if [ -n "$AUR_HELPER" ]; then
                         $AUR_HELPER -S --noconfirm docker-desktop || {
-                            print_message "❌ Échec d'installation de Docker Desktop" "$RED"
+                            print_message "Échec d'installation de Docker Desktop" "$RED"
                         }
                     else
-                        print_message "❌ Aucun helper AUR disponible pour installer Docker Desktop" "$RED"
+                        print_message "Aucun helper AUR disponible pour installer Docker Desktop" "$RED"
                     fi
                     ;;
                 debian)
@@ -645,11 +643,11 @@ main() {
                         wget https://desktop.docker.com/linux/main/amd64/docker-desktop-4.21.1-amd64.deb
                     fi
                     sudo apt install -y ./docker-desktop-4.21.1-amd64.deb || {
-                        print_message "❌ Échec d'installation de Docker Desktop" "$RED"
+                        print_message "Échec d'installation de Docker Desktop" "$RED"
                     }
                     ;;
                 *) 
-                    print_message "⚠️  Docker Desktop non disponible pour cette distribution" "$YELLOW" 
+                    print_message "Docker Desktop non disponible pour cette distribution" "$YELLOW" 
                     ;;
             esac
         fi
@@ -659,18 +657,12 @@ main() {
     safe_install "btop" "Moniteur système moderne" "btop" "" "btop"
     safe_install "htop" "Moniteur système classique" "htop" "" "htop"
     
-    # ==========================================
-    # OUTILS DE PRISE DE NOTES
-    # ==========================================
-    print_section "📝 OUTILS DE PRISE DE NOTES"
+    print_section "OUTILS DE PRISE DE NOTES"
     
     safe_install "Obsidian" "Prise de notes avec liens" "obsidian" "md.obsidian.Obsidian" "obsidian"
     safe_install "Joplin" "Application de notes open source" "joplin-appimage" "net.cozic.joplin_desktop" "joplin"
     
-    # ==========================================
-    # BUREAU ET UTILITAIRES SYSTÈME
-    # ==========================================
-    print_section "🖥️  BUREAU ET UTILITAIRES SYSTÈME"
+    print_section "BUREAU ET UTILITAIRES SYSTÈME"
     
     safe_install "GNOME Tweaks" "Personnalisation GNOME" "gnome-tweaks" "" "gnome-tweaks"
     safe_install "Stacer" "Optimiseur système" "stacer" "com.oguzhaninan.Stacer" "stacer"
@@ -680,10 +672,7 @@ main() {
     safe_install "ULauncher" "Lanceur d'applications" "ulauncher" "" "ulauncher"
     safe_install "Flameshot" "Capture d'écran" "flameshot" "" "flameshot"
     
-    # ==========================================
-    # INTERNET ET COMMUNICATION
-    # ==========================================
-    print_section "🌐 INTERNET ET COMMUNICATION"
+    print_section "INTERNET ET COMMUNICATION"
     
     safe_install "Firefox" "Navigateur web Mozilla" "firefox" "org.mozilla.firefox" "firefox"
     safe_install "LibreWolf" "Firefox axé sur la vie privée" "librewolf-bin" "io.gitlab.librewolf-community" "librewolf"
@@ -693,16 +682,16 @@ main() {
     # Google Chrome (installation spéciale)
     if ask_install "Google Chrome" "Navigateur Google"; then
         if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then
-            print_message "✅ Google Chrome est déjà installé" "$GREEN"
+            print_message "Google Chrome est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
                     if [ -n "$AUR_HELPER" ]; then
                         $AUR_HELPER -S --noconfirm google-chrome || {
-                            print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                            print_message "Échec d'installation de Google Chrome" "$RED"
                         }
                     else
-                        print_message "❌ Aucun helper AUR disponible pour installer Google Chrome" "$RED"
+                        print_message "Aucun helper AUR disponible pour installer Google Chrome" "$RED"
                     fi
                     ;;
                 debian)
@@ -713,7 +702,7 @@ main() {
                         sudo apt update
                     fi
                     install_package "google-chrome-stable" "" "Navigateur Google" || {
-                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                        print_message "Échec d'installation de Google Chrome" "$RED"
                     }
                     ;;
                 fedora)
@@ -723,7 +712,7 @@ main() {
                         sudo dnf config-manager --set-enabled google-chrome
                     fi
                     install_package "google-chrome-stable" "" "Navigateur Google" || {
-                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                        print_message "Échec d'installation de Google Chrome" "$RED"
                     }
                     ;;
                 opensuse)
@@ -734,7 +723,7 @@ main() {
                         sudo zypper addrepo http://dl.google.com/linux/chrome/rpm/stable/x86_64 Google-Chrome
                     fi
                     install_package "google-chrome-stable" "" "Navigateur Google" || {
-                        print_message "❌ Échec d'installation de Google Chrome" "$RED"
+                        print_message "Échec d'installation de Google Chrome" "$RED"
                     }
                     ;;
             esac
@@ -744,21 +733,21 @@ main() {
     # DuckDuckGo Browser
     if ask_install "DuckDuckGo Browser" "Navigateur axé sur la vie privée"; then
         if command -v duckduckgo >/dev/null 2>&1; then
-            print_message "✅ DuckDuckGo Browser est déjà installé" "$GREEN"
+            print_message "DuckDuckGo Browser est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch)
                     if [ -n "$AUR_HELPER" ]; then
                         $AUR_HELPER -S --noconfirm duckduckgo-privacy-browser || {
-                            print_message "❌ Échec d'installation de DuckDuckGo Browser" "$RED"
+                            print_message "Échec d'installation de DuckDuckGo Browser" "$RED"
                         }
                     else
-                        print_message "❌ Aucun helper AUR disponible pour installer DuckDuckGo Browser" "$RED"
+                        print_message "Aucun helper AUR disponible pour installer DuckDuckGo Browser" "$RED"
                     fi
                     ;;
                 *) 
-                    print_message "⚠️  DuckDuckGo Browser disponible principalement sur mobile" "$YELLOW"
-                    print_message "💡 Configurez DuckDuckGo comme moteur de recherche par défaut dans votre navigateur" "$CYAN"
+                    print_message "DuckDuckGo Browser disponible principalement sur mobile" "$YELLOW"
+                    print_message "Configurez DuckDuckGo comme moteur de recherche par défaut dans votre navigateur" "$CYAN"
                     ;;
             esac
         fi
@@ -771,10 +760,7 @@ main() {
     safe_install "Slack" "Communication professionnelle" "slack-desktop" "com.slack.Slack" "slack"
     safe_install "Thunderbird" "Client email" "thunderbird" "org.mozilla.Thunderbird" "thunderbird"
     
-    # ==========================================
-    # MULTIMÉDIA
-    # ==========================================
-    print_section "🎵 MULTIMÉDIA"
+    print_section  "MULTIMÉDIA"
     
     safe_install "VLC" "Lecteur multimédia universel" "vlc" "org.videolan.VLC" "vlc"
     safe_install "MPV" "Lecteur vidéo minimaliste" "mpv" "" "mpv"
@@ -787,10 +773,7 @@ main() {
     safe_install "EasyEffects" "Processeur audio en temps réel" "easyeffects" "com.github.wwmm.easyeffects" "easyeffects"
     safe_install "Piper" "Configuration souris gaming" "piper" "org.freedesktop.Piper" "piper"
     
-    # ==========================================
-    # DESIGN ET IMAGE
-    # ==========================================
-    print_section "🎨 DESIGN ET IMAGE"
+    print_section "DESIGN ET IMAGE"
     
     safe_install "GIMP" "Éditeur d'image avancé" "gimp" "org.gimp.GIMP" "gimp"
     safe_install "Krita" "Peinture numérique" "krita" "org.kde.krita" "krita"
@@ -799,15 +782,12 @@ main() {
     safe_install "Blender" "Modélisation 3D et animation" "blender" "org.blender.Blender" "blender"
     safe_install "ImageMagick" "Manipulation d'image en ligne de commande" "imagemagick" "" "convert"
     
-    # ==========================================
-    # GAMING
-    # ==========================================
-    print_section "🎮 GAMING"
+    print_section "GAMING"
     
-    # Steam (installation spéciale)
+    # Steam 
     if ask_install "Steam" "Plateforme de jeux"; then
         if command -v steam >/dev/null 2>&1; then
-            print_message "✅ Steam est déjà installé" "$GREEN"
+            print_message "Steam est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch) 
@@ -817,7 +797,7 @@ main() {
                         sudo pacman -Sy
                     fi
                     install_package "steam" "" "Plateforme de jeux" || {
-                        print_message "❌ Échec d'installation de Steam" "$RED"
+                        print_message "Échec d'installation de Steam" "$RED"
                     }
                     ;;
                 debian)
@@ -827,7 +807,7 @@ main() {
                         sudo apt update
                     fi
                     install_package "steam" "" "Plateforme de jeux" || {
-                        print_message "❌ Échec d'installation de Steam" "$RED"
+                        print_message "Échec d'installation de Steam" "$RED"
                     }
                     ;;
                 fedora) 
@@ -835,12 +815,12 @@ main() {
                         sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
                     fi
                     install_package "steam" "" "Plateforme de jeux" || {
-                        print_message "❌ Échec d'installation de Steam" "$RED"
+                        print_message "Échec d'installation de Steam" "$RED"
                     }
                     ;;
                 *) 
                     install_flatpak "com.valvesoftware.Steam" "Plateforme de jeux Steam" || {
-                        print_message "❌ Échec d'installation de Steam" "$RED"
+                        print_message "Échec d'installation de Steam" "$RED"
                     }
                     ;;
             esac
@@ -856,18 +836,12 @@ main() {
     safe_install "Wine Staging" "Couche de compatibilité Windows" "wine-staging" "" "wine"
     safe_install "Winetricks" "Utilitaires Wine" "winetricks" "" "winetricks"
     
-    # ==========================================
-    # SÉCURITÉ
-    # ==========================================
-    print_section "🔒 SÉCURITÉ"
+    print_section "SÉCURITÉ"
     
     safe_install "KeePassXC" "Gestionnaire de mots de passe" "keepassxc" "org.keepassxc.KeePassXC" "keepassxc"
     safe_install "GUFW" "Pare-feu graphique" "gufw" "" "gufw"
     
-    # ==========================================
-    # AUTRES OUTILS
-    # ==========================================
-    print_section "🛠️  AUTRES OUTILS"
+    print_section "AUTRES OUTILS"
     
     safe_install "Balena Etcher" "Création de médias bootables" "balena-etcher" "com.balena.Etcher" "balena-etcher"
     safe_install "Popsicle" "Créateur USB (alternative Etcher)" "popsicle" "" "popsicle"
@@ -875,32 +849,32 @@ main() {
     # VirtualBox (installation spéciale)
     if ask_install "VirtualBox" "Machine virtuelle"; then
         if command -v virtualbox >/dev/null 2>&1; then
-            print_message "✅ VirtualBox est déjà installé" "$GREEN"
+            print_message "VirtualBox est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch) 
                     install_package "virtualbox" "" "Machine virtuelle" || {
-                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                        print_message "Échec d'installation de VirtualBox" "$RED"
                     }
                     if command -v virtualbox >/dev/null 2>&1; then
                         sudo modprobe vboxdrv
                         sudo usermod -aG vboxusers $USER
-                        print_message "✅ VirtualBox configuré avec succès" "$GREEN"
+                        print_message "VirtualBox configuré avec succès" "$GREEN"
                     fi
                     ;;
                 debian) 
                     install_package "virtualbox" "" "Machine virtuelle" || {
-                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                        print_message "Échec d'installation de VirtualBox" "$RED"
                     }
                     ;;
                 fedora) 
                     install_package "VirtualBox" "" "Machine virtuelle" || {
-                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                        print_message "Échec d'installation de VirtualBox" "$RED"
                     }
                     ;;
                 opensuse) 
                     install_package "virtualbox" "" "Machine virtuelle" || {
-                        print_message "❌ Échec d'installation de VirtualBox" "$RED"
+                        print_message "Échec d'installation de VirtualBox" "$RED"
                     }
                     ;;
             esac
@@ -910,44 +884,44 @@ main() {
     # QEMU/KVM (installation spéciale)
     if ask_install "QEMU/KVM" "Virtualisation native"; then
         if command -v virt-manager >/dev/null 2>&1; then
-            print_message "✅ QEMU/KVM est déjà installé" "$GREEN"
+            print_message "QEMU/KVM est déjà installé" "$GREEN"
         else
             case "$DISTRO" in
                 arch) 
                     install_package "qemu-full virt-manager" "" "Virtualisation native" || {
-                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                        print_message "Échec d'installation de QEMU/KVM" "$RED"
                     }
                     if command -v virt-manager >/dev/null 2>&1; then
                         sudo systemctl enable libvirtd
                         sudo usermod -aG libvirt $USER
-                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                        print_message "QEMU/KVM configuré avec succès" "$GREEN"
                     fi
                     ;;
                 debian) 
                     install_package "qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager" "" "Virtualisation native" || {
-                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                        print_message "Échec d'installation de QEMU/KVM" "$RED"
                     }
                     if command -v virt-manager >/dev/null 2>&1; then
                         sudo usermod -aG libvirt $USER
-                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                        print_message "QEMU/KVM configuré avec succès" "$GREEN"
                     fi
                     ;;
                 fedora) 
                     install_package "qemu-kvm libvirt virt-manager" "" "Virtualisation native" || {
-                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                        print_message "Échec d'installation de QEMU/KVM" "$RED"
                     }
                     if command -v virt-manager >/dev/null 2>&1; then
                         sudo usermod -aG libvirt $USER
-                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                        print_message "QEMU/KVM configuré avec succès" "$GREEN"
                     fi
                     ;;
                 opensuse) 
                     install_package "qemu-kvm libvirt virt-manager" "" "Virtualisation native" || {
-                        print_message "❌ Échec d'installation de QEMU/KVM" "$RED"
+                        print_message "Échec d'installation de QEMU/KVM" "$RED"
                     }
                     if command -v virt-manager >/dev/null 2>&1; then
                         sudo usermod -aG libvirt $USER
-                        print_message "✅ QEMU/KVM configuré avec succès" "$GREEN"
+                        print_message "QEMU/KVM configuré avec succès" "$GREEN"
                     fi
                     ;;
             esac
@@ -957,14 +931,14 @@ main() {
     # Spicetify-CLI
     if ask_install "Spicetify-CLI" "Personnalisation Spotify"; then
         if command -v spicetify >/dev/null 2>&1; then
-            print_message "✅ Spicetify-CLI est déjà installé" "$GREEN"
+            print_message "Spicetify-CLI est déjà installé" "$GREEN"
         else
             # Installation via curl
             curl -fsSL https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.sh | sh || {
-                print_message "❌ Échec d'installation de Spicetify-CLI" "$RED"
+                print_message "Échec d'installation de Spicetify-CLI" "$RED"
             }
             if command -v spicetify >/dev/null 2>&1; then
-                print_message "✅ Spicetify-CLI installé. Configurez-le avec 'spicetify config'" "$GREEN"
+                print_message "Spicetify-CLI installé. Configurez-le avec 'spicetify config'" "$GREEN"
             fi
         fi
     fi
@@ -972,10 +946,8 @@ main() {
     safe_install "Snap" "Gestionnaire de paquets Snap" "snapd" "" "snap"
     safe_install "AppImageLauncher" "Intégration AppImage" "appimagelauncher" "" "appimagelauncher"
     
-    # ==========================================
-    # OUTILS IA ET DÉVELOPPEMENT AVANCÉ
-    # ==========================================
-    print_section "🤖 OUTILS IA ET DÉVELOPPEMENT AVANCÉ"
+    # Outils IA locaux et en ligne de commande  
+    print_section "OUTILS IA ET DÉVELOPPEMENT AVANCÉ"
     
     safe_install "GPT4All" "IA locale pour le code" "gpt4all" "io.gpt4all.gpt4all" "gpt4all"
     
@@ -983,24 +955,260 @@ main() {
     if command -v pip3 >/dev/null 2>&1; then
         if ask_install "Outils IA Python" "Codeium CLI, TabNine, etc."; then
             pip3 install --user codeium || {
-                print_message "❌ Échec d'installation de Codeium" "$RED"
+                print_message "Échec d'installation de Codeium" "$RED"
             }
             pip3 install --user openai || {
-                print_message "❌ Échec d'installation de OpenAI" "$RED"
+                print_message "Échec d'installation de OpenAI" "$RED"
             }
             pip3 install --user anthropic || {
-                print_message "❌ Échec d'installation de Anthropic" "$RED"
+                print_message "Échec d'installation de Anthropic" "$RED"
             }
             if pip3 list | grep -q codeium; then
-                print_message "✅ Outils IA Python installés" "$GREEN"
+                print_message "Outils IA Python installés" "$GREEN"
             fi
         fi
     fi
+
     
-    # ==========================================
-    # CONFIGURATION POST-INSTALLATION
-    # ==========================================
-    print_section "⚙️  CONFIGURATION POST-INSTALLATION"
+    # Hébergement local de modèles IA 
+    print_section "IA LOCALE : MODÈLES ET OUTILS"
+
+    # LLM Studio
+    if ask_install "LLM Studio" "Interface graphique pour modèles IA locaux"; then
+        if command -v llm-studio >/dev/null 2>&1; then
+            print_message "LLM Studio est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm llm-studio-bin || {
+                            print_message "Échec d'installation de LLM Studio" "$RED"
+                        }
+                    else
+                        print_message "Aucun helper AUR disponible pour installer LLM Studio" "$RED"
+                    fi
+                    ;;
+                *)
+                    # Installation via pip
+                    if command -v pip3 >/dev/null 2>&1; then
+                        pip3 install --user llm-studio || {
+                            print_message "Échec d'installation de LLM Studio via pip" "$RED"
+                        }
+                    else
+                        print_message "Python/pip requis pour LLM Studio" "$RED"
+                    fi
+                    ;;
+            esac
+        fi
+    fi
+
+    # Ollama - Pour exécuter des modèles LLM locaux
+    if ask_install "Ollama" "Plateforme pour exécuter des modèles LLM locaux"; then
+        if command -v ollama >/dev/null 2>&1; then
+            print_message "Ollama est déjà installé" "$GREEN"
+        else
+            # Installation via le script officiel
+            curl -fsSL https://ollama.ai/install.sh | sh || {
+                print_message "Échec d'installation de Ollama" "$RED"
+            }
+        fi
+        
+        # Proposition de téléchargement de modèles après installation
+        if command -v ollama >/dev/null 2>&1; then
+            if ask_install "Modèles Ollama populaires" "Téléchargement de modèles IA locaux"; then
+                print_message "Téléchargement des modèles Ollama..." "$BLUE"
+                
+                models=(
+                    "llama2"           # Meta Llama 2
+                    "codellama"        # Code Llama - spécialisé code
+                    "mistral"          # Mistral 7B
+                    "mixtral"          # Mixtral 8x7B
+                    "gemma"            # Google Gemma
+                    "phi"              # Microsoft Phi-2
+                    "stable-code"      # Stable Code
+                    "starling-lm"      # Starling LM
+                    "wizardcoder"      # WizardCoder
+                    "codeup"           # CodeUp
+                )
+                
+                for model in "${models[@]}"; do
+                    print_message "Téléchargement: $model..." "$CYAN"
+                    ollama pull "$model" || {
+                        print_message "Échec du téléchargement de $model" "$YELLOW"
+                    }
+                done
+                
+                print_message "Modèles Ollama téléchargés" "$GREEN"
+            fi
+        fi
+    fi
+
+    # Text Generation WebUI
+    if ask_install "Text Generation WebUI" "Interface web pour modèles IA locaux"; then
+        if [ -d "$HOME/text-generation-webui" ]; then
+            print_message "Text Generation WebUI est déjà installé" "$GREEN"
+        else
+            print_message "Installation de Text Generation WebUI..." "$BLUE"
+            
+            # Clonage du repository
+            git clone https://github.com/oobabooga/text-generation-webui.git ~/text-generation-webui || {
+                print_message "Échec du clonage de Text Generation WebUI" "$RED"
+            }
+            
+            if [ -d "$HOME/text-generation-webui" ]; then
+                cd ~/text-generation-webui
+                
+                # Installation des dépendances
+                if command -v pip3 >/dev/null 2>&1; then
+                    pip3 install -r requirements.txt || {
+                        print_message "Échec partiel de l'installation des dépendances" "$YELLOW"
+                    }
+                fi
+                
+                print_message "Text Generation WebUI installé dans ~/text-generation-webui" "$GREEN"
+                print_message "Lancez avec: cd ~/text-generation-webui && python server.py" "$CYAN"
+            fi
+        fi
+    fi
+
+    # LM Studio (alternative commerciale)
+    if ask_install "LM Studio" "Plateforme commerciale pour modèles IA locaux"; then
+        if command -v lmstudio >/dev/null 2>&1; then
+            print_message "LM Studio est déjà installé" "$GREEN"
+        else
+            # Téléchargement et installation
+            print_message "Téléchargement de LM Studio..." "$BLUE"
+            
+            # Détermination de l'architecture
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "x86_64" ]; then
+                LM_URL="https://releases.lmstudio.ai/linux/x64/latest/lmstudio-0.2.20-x86_64.AppImage"
+            else
+                LM_URL="https://releases.lmstudio.ai/linux/arm64/latest/lmstudio-0.2.20-aarch64.AppImage"
+            fi
+            
+            wget -O ~/lmstudio.AppImage "$LM_URL" || {
+                print_message "Échec du téléchargement de LM Studio" "$RED"
+            }
+            
+            if [ -f ~/lmstudio.AppImage ]; then
+                chmod +x ~/lmstudio.AppImage
+                print_message "LM Studio téléchargé dans ~/lmstudio.AppImage" "$GREEN"
+                print_message "Lancez avec: ~/lmstudio.AppImage" "$CYAN"
+            fi
+        fi
+    fi
+
+    # Hugging Face Hub pour télécharger des modèles
+    if ask_install "Hugging Face Hub" "CLI pour télécharger des modèles Hugging Face"; then
+        if command -v huggingface-cli >/dev/null 2>&1; then
+            print_message "Hugging Face Hub est déjà installé" "$GREEN"
+        else
+            if command -v pip3 >/dev/null 2>&1; then
+                pip3 install --user huggingface-hub || {
+                    print_message "Échec d'installation de Hugging Face Hub" "$RED"
+                }
+            else
+                print_message "Python/pip requis pour Hugging Face Hub" "$RED"
+            fi
+        fi
+    fi
+
+    # Proposition de téléchargement de modèles populaires
+    if ask_install "Modèles IA populaires" "Téléchargement de modèles Hugging Face"; then
+        print_message "Téléchargement de modèles IA populaires..." "$BLUE"
+        
+        # Création du dossier pour les modèles
+        MODELS_DIR="$HOME/ai-models"
+        mkdir -p "$MODELS_DIR"
+        
+        # Liste des modèles populaires avec leurs URLs
+        declare -A models=(
+            ["llama-2-7b"]="meta-llama/Llama-2-7b"
+            ["mistral-7b"]="mistralai/Mistral-7B-v0.1"
+            ["zephyr-7b"]="HuggingFaceH4/zephyr-7b-beta"
+            ["phi-2"]="microsoft/phi-2"
+            ["gemma-7b"]="google/gemma-7b"
+            ["starcoder"]="bigcode/starcoder"
+            ["wizardcoder"]="WizardLM/WizardCoder-15B-V1.0"
+            ["codellama-7b"]="codellama/CodeLlama-7b-hf"
+        )
+        
+        for model_name in "${!models[@]}"; do
+            model_path="${models[$model_name]}"
+            
+            if ask_install "$model_name" "Modèle $model_name"; then
+                print_message "Téléchargement de $model_name..." "$CYAN"
+                
+                if command -v huggingface-cli >/dev/null 2>&1; then
+                    huggingface-cli download "$model_path" --local-dir "$MODELS_DIR/$model_name" --resume-download || {
+                        print_message "Échec partiel du téléchargement de $model_name" "$YELLOW"
+                    }
+                else
+                    print_message "huggingface-cli non installé pour télécharger $model_name" "$RED"
+                fi
+            fi
+        done
+        
+        print_message "Modèles téléchargés dans $MODELS_DIR/" "$GREEN"
+    fi
+
+    # GPT4All
+    if command -v gpt4all >/dev/null 2>&1 || [ -d "$HOME/.local/share/gpt4all" ]; then
+        if ask_install "Modèles GPT4All supplémentaires" "Téléchargement de modèles pour GPT4All"; then
+            print_message "Téléchargement de modèles GPT4All..." "$BLUE"
+            
+            # Modèles GPT4All populaires
+            declare -A gpt4all_models=(
+                ["mistral-7b"]="Mistral-7B-OpenOrca.gguf"
+                ["wizardlm-13b"]="WizardLM-13B-Uncensored.gguf"
+                ["hermes-2"]="Hermes-2-Theta-Llama-3-8B.gguf"
+                ["orca-2"]="Orca-2-13B.gguf"
+                ["codellama-7b"]="CodeLlama-7B.gguf"
+            )
+            
+            for model_name in "${!gpt4all_models[@]}"; do
+                model_file="${gpt4all_models[$model_name]}"
+                
+                if ask_install "$model_name" "Modèle GPT4All $model_name"; then
+                    print_message "Téléchargement de $model_file..." "$CYAN"
+                    
+                    # Téléchargement direct depuis le dépôt GPT4All
+                    wget -P ~/.local/share/gpt4all "https://gpt4all.io/models/$model_file" || {
+                        print_message "Échec du téléchargement de $model_file" "$YELLOW"
+                    }
+                fi
+            done
+            
+            print_message "Modèles GPT4All téléchargés" "$GREEN"
+        fi
+    fi
+
+    # OpenWebUI (anciennement Ollama WebUI)
+    if ask_install "OpenWebUI" "Interface web pour Ollama"; then
+        if command -v docker >/dev/null 2>&1; then
+            if docker ps -a | grep -q open-webui; then
+                print_message "OpenWebUI est déjà installé" "$GREEN"
+            else
+                print_message "Installation de OpenWebUI via Docker..." "$BLUE"
+                
+                docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway \
+                    -v open-webui:/app/backend/data \
+                    --name open-webui \
+                    --restart always \
+                    ghcr.io/open-webui/open-webui:main || {
+                    print_message "Échec de l'installation de OpenWebUI" "$RED"
+                }
+                
+                print_message "OpenWebUI installé sur http://localhost:3000" "$GREEN"
+            fi
+        else
+            print_message "Docker requis pour OpenWebUI" "$RED"
+        fi
+    fi
+        
+    # Configuration post-installation
+    print_section "CONFIGURATION POST-INSTALLATION"
     
     # Configuration de Git
     if command -v git >/dev/null 2>&1; then
@@ -1024,14 +1232,14 @@ main() {
         git config --global alias.last 'log -1 HEAD'
         git config --global alias.visual '!gitk'
         
-        print_message "✅ Git configuré" "$GREEN"
+        print_message "Git configuré" "$GREEN"
     fi
     
     # Configuration de Zsh avec Oh My Zsh (optionnel)
     if ask_install "Oh My Zsh" "Framework Zsh avec thèmes et plugins"; then
         # Vérifier si Oh My Zsh est déjà installé
         if [ -d "$HOME/.oh-my-zsh" ]; then
-            print_message "✅ Oh My Zsh est déjà installé" "$GREEN"
+            print_message "Oh My Zsh est déjà installé" "$GREEN"
         else
             # Installation de Zsh si nécessaire
             if ! command -v zsh >/dev/null 2>&1; then
@@ -1041,16 +1249,16 @@ main() {
             # Installation d'Oh My Zsh
             if command -v zsh >/dev/null 2>&1; then
                 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || {
-                    print_message "❌ Échec d'installation de Oh My Zsh" "$RED"
+                    print_message "Échec d'installation de Oh My Zsh" "$RED"
                 }
                 
                 if [ -d "$HOME/.oh-my-zsh" ]; then
                     # Installation de plugins populaires
                     git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions || {
-                        print_message "⚠️  Échec du clonage de zsh-autosuggestions" "$YELLOW"
+                        print_message "Échec du clonage de zsh-autosuggestions" "$YELLOW"
                     }
                     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting || {
-                        print_message "⚠️  Échec du clonage de zsh-syntax-highlighting" "$YELLOW"
+                        print_message "Échec du clonage de zsh-syntax-highlighting" "$YELLOW"
                     }
                     
                     # Configuration du .zshrc avec plugins
@@ -1058,45 +1266,279 @@ main() {
                         sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting docker docker-compose npm node python rust go)/' ~/.zshrc
                     fi
                     
-                    print_message "✅ Oh My Zsh installé avec plugins" "$GREEN"
-                    print_message "ℹ️  Changez votre shell avec: chsh -s /bin/zsh" "$CYAN"
+                    print_message "Oh My Zsh installé avec plugins" "$GREEN"
+                    print_message "Changez votre shell avec: chsh -s /bin/zsh" "$CYAN"
                 fi
             fi
         fi
     fi
+
+    print_section "BASES DE DONNÉES"
+
+    # MySQL
+    if ask_install "MySQL Server" "Système de gestion de base de données relationnelle"; then
+        # Vérifier si MySQL est déjà installé
+        if command -v mysql >/dev/null 2>&1 || command -v mysqld >/dev/null 2>&1; then
+            print_message "MySQL est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    install_package "mysql" "" "Serveur MySQL" || {
+                        print_message "Échec d'installation de MySQL" "$RED"
+                    }
+                    
+                    if command -v mysqld >/dev/null 2>&1; then
+                        # Initialisation de MySQL
+                        sudo mysql_install_db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+                        sudo systemctl enable mysqld
+                        sudo systemctl start mysqld
+                        
+                        # Sécurisation de l'installation
+                        print_message "Sécurisation de l'installation MySQL..." "$BLUE"
+                        sudo mysql_secure_installation || {
+                            print_message "Exécutez manuellement: sudo mysql_secure_installation" "$YELLOW"
+                        }
+                        print_message "MySQL installé et sécurisé" "$GREEN"
+                    fi
+                    ;;
+                debian)
+                    # Installation du serveur MySQL
+                    sudo apt install -y mysql-server || {
+                        print_message "Échec d'installation de MySQL" "$RED"
+                    }
+                    
+                    if command -v mysqld >/dev/null 2>&1; then
+                        sudo systemctl enable mysql
+                        sudo systemctl start mysql
+                        
+                        # Sécurisation de l'installation
+                        print_message "Sécurisation de l'installation MySQL..." "$BLUE"
+                        sudo mysql_secure_installation || {
+                            print_message "Exécutez manuellement: sudo mysql_secure_installation" "$YELLOW"
+                        }
+                        print_message "MySQL installé et sécurisé" "$GREEN"
+                    fi
+                    ;;
+                fedora)
+                    # Installation de MySQL sur Fedora
+                    install_package "community-mysql-server" "" "Serveur MySQL" || {
+                        print_message "Échec d'installation de MySQL" "$RED"
+                    }
+                    
+                    if command -v mysqld >/dev/null 2>&1; then
+                        sudo systemctl enable mysqld
+                        sudo systemctl start mysqld
+                        
+                        # Récupération du mot de passe temporaire
+                        temp_password=$(sudo grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}')
+                        
+                        # Sécurisation de l'installation
+                        print_message "Sécurisation de l'installation MySQL..." "$BLUE"
+                        if [ -n "$temp_password" ]; then
+                            print_message "Mot de passe temporaire: $temp_password" "$YELLOW"
+                        fi
+                        print_message "Exécutez: sudo mysql_secure_installation" "$CYAN"
+                        print_message "MySQL installé - sécurisation requise" "$GREEN"
+                    fi
+                    ;;
+                opensuse)
+                    # Installation de MySQL sur openSUSE
+                    install_package "mysql" "" "Serveur MySQL" || {
+                        print_message "Échec d'installation de MySQL" "$RED"
+                    }
+                    
+                    if command -v mysqld >/dev/null 2>&1; then
+                        sudo systemctl enable mysql
+                        sudo systemctl start mysql
+                        
+                        # Sécurisation de l'installation
+                        print_message "Sécurisation de l'installation MySQL..." "$BLUE"
+                        sudo mysql_secure_installation || {
+                            print_message "Exécutez manuellement: sudo mysql_secure_installation" "$YELLOW"
+                        }
+                        print_message "MySQL installé et sécurisé" "$GREEN"
+                    fi
+                    ;;
+            esac
+        fi
+    fi
+
+    # MySQL Workbench (interface graphique)
+    if ask_install "MySQL Workbench" "Interface graphique pour MySQL"; then
+        if command -v mysql-workbench >/dev/null 2>&1; then
+            print_message "MySQL Workbench est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    if [ -n "$AUR_HELPER" ]; then
+                        $AUR_HELPER -S --noconfirm mysql-workbench || {
+                            print_message "Échec d'installation de MySQL Workbench" "$RED"
+                        }
+                    else
+                        print_message "Aucun helper AUR disponible pour MySQL Workbench" "$RED"
+                    fi
+                    ;;
+                debian)
+                    install_package "mysql-workbench" "" "Interface graphique MySQL" || {
+                        print_message "Échec d'installation de MySQL Workbench" "$RED"
+                    }
+                    ;;
+                fedora)
+                    install_package "mysql-workbench" "" "Interface graphique MySQL" || {
+                        print_message "Échec d'installation de MySQL Workbench" "$RED"
+                    }
+                    ;;
+                opensuse)
+                    install_package "mysql-workbench-community" "" "Interface graphique MySQL" || {
+                        print_message "Échec d'installation de MySQL Workbench" "$RED"
+                    }
+                    ;;
+            esac
+        fi
+    fi
+
+    # DBeaver (alternative à MySQL Workbench)
+    safe_install "DBeaver" "Client SQL universel" "dbeaver" "io.dbeaver.DBeaverCommunity" "dbeaver"
+
+    # PostgreSQL (alternative à MySQL)
+    if ask_install "PostgreSQL" "Système de gestion de base de données relationnelle avancé"; then
+        if command -v psql >/dev/null 2>&1; then
+            print_message "PostgreSQL est déjà installé" "$GREEN"
+        else
+            case "$DISTRO" in
+                arch)
+                    install_package "postgresql" "" "Serveur PostgreSQL" || {
+                        print_message "Échec d'installation de PostgreSQL" "$RED"
+                    }
+                    
+                    if command -v postgres >/dev/null 2>&1; then
+                        sudo systemctl enable postgresql
+                        sudo systemctl start postgresql
+                        print_message "PostgreSQL installé et démarré" "$GREEN"
+                    fi
+                    ;;
+                debian)
+                    # Ajout du dépôt PostgreSQL
+                    if [ ! -f "/etc/apt/sources.list.d/pgdg.list" ]; then
+                        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+                        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+                        sudo apt update
+                    fi
+                    
+                    install_package "postgresql" "" "Serveur PostgreSQL" || {
+                        print_message "Échec d'installation de PostgreSQL" "$RED"
+                    }
+                    
+                    if command -v postgres >/dev/null 2>&1; then
+                        sudo systemctl enable postgresql
+                        sudo systemctl start postgresql
+                        print_message "PostgreSQL installé et démarré" "$GREEN"
+                    fi
+                    ;;
+                fedora)
+                    install_package "postgresql-server" "" "Serveur PostgreSQL" || {
+                        print_message "Échec d'installation de PostgreSQL" "$RED"
+                    }
+                    
+                    if command -v postgres >/dev/null 2>&1; then
+                        sudo postgresql-setup --initdb
+                        sudo systemctl enable postgresql
+                        sudo systemctl start postgresql
+                        print_message "PostgreSQL installé et démarré" "$GREEN"
+                    fi
+                    ;;
+                opensuse)
+                    install_package "postgresql" "" "Serveur PostgreSQL" || {
+                        print_message "Échec d'installation de PostgreSQL" "$RED"
+                    }
+                    
+                    if command -v postgres >/dev/null 2>&1; then
+                        sudo systemctl enable postgresql
+                        sudo systemctl start postgresql
+                        print_message "PostgreSQL installé et démarré" "$GREEN"
+                    fi
+                    ;;
+            esac
+        fi
+    fi
+
+    # SQLite (base de données légère)
+    safe_install "SQLite" "Moteur de base de données embarqué" "sqlite" "" "sqlite3"
+
+    # Outils de gestion de bases de données
+    safe_install "phpMyAdmin" "Interface web pour MySQL" "phpmyadmin" "" ""
+    safe_install "pgAdmin" "Interface web pour PostgreSQL" "pgadmin4" "" ""
+
+    # Configuration post-installation MySQL
+    if command -v mysql >/dev/null 2>&1; then
+        if ask_install "Configuration MySQL avancée" "Création d'utilisateur et base de test"; then
+            print_message "Configuration MySQL avancée..." "$BLUE"
+            
+            # Demander les informations de configuration
+            read -p "Nom d'utilisateur MySQL à créer (vide pour ignorer): " mysql_user
+            read -p "Mot de passe pour l'utilisateur: " mysql_password
+            read -p "Nom de la base de données à créer: " mysql_dbname
+            
+            if [ -n "$mysql_user" ] && [ -n "$mysql_password" ] && [ -n "$mysql_dbname" ]; then
+                # Commande MySQL pour créer l'utilisateur et la base
+                SQL_COMMANDS="
+    CREATE DATABASE IF NOT EXISTS \`$mysql_dbname\`;
+    CREATE USER IF NOT EXISTS '$mysql_user'@'localhost' IDENTIFIED BY '$mysql_password';
+    GRANT ALL PRIVILEGES ON \`$mysql_dbname\`.* TO '$mysql_user'@'localhost';
+    FLUSH PRIVILEGES;
+    "
+                
+                # Exécution des commandes
+                echo "$SQL_COMMANDS" | sudo mysql -u root || {
+                    print_message "Erreur lors de la configuration MySQL" "$RED"
+                    print_message "Exécutez manuellement: sudo mysql -u root" "$CYAN"
+                }
+                
+                print_message "Base de données '$mysql_dbname' et utilisateur '$mysql_user' créés" "$GREEN"
+            else
+                print_message "Configuration MySQL avancée ignorée" "$YELLOW"
+            fi
+        fi
+    fi
+
+    # Message d'information pour MySQL
+    if command -v mysql >/dev/null 2>&1; then
+        print_message "Commandes MySQL utiles:" "$CYAN"
+        print_message "   • Connexion: mysql -u root -p" "$NC"
+        print_message "   • Statut: sudo systemctl status mysql" "$NC"
+        print_message "   • Redémarrer: sudo systemctl restart mysql" "$NC"
+    fi
     
     # Message final
-    print_section "🎉 INSTALLATION TERMINÉE"
+    print_section "INSTALLATION TERMINÉE"
     
-    print_message "🎊 Félicitations ! Votre environnement de développement est maintenant configuré." "$GREEN"
+    print_message "Votre environnement de développement est maintenant configuré." "$GREEN"
     print_message "" ""
-    print_message "📋 Prochaines étapes recommandées:" "$CYAN"
+    print_message "Prochaines étapes recommandées:" "$CYAN"
     print_message "   1. Redémarrez votre session pour appliquer les changements de groupes" "$YELLOW"
     print_message "   2. Configurez vos extensions VS Code selon vos besoins" "$YELLOW"
     print_message "   3. Personnalisez votre terminal et vos outils" "$YELLOW"
     print_message "   4. Configurez vos clés SSH et GPG pour Git" "$YELLOW"
     print_message "   5. Importez vos dotfiles si vous en avez" "$YELLOW"
     print_message "" ""
-    print_message "💡 Conseils:" "$BLUE"
+    print_message "Conseils:" "$BLUE"
     print_message "   • Utilisez 'flatpak update' pour mettre à jour les apps Flatpak" "$NC"
     print_message "   • Explorez les extensions VS Code installées" "$NC"
     print_message "   • Configurez vos outils IA avec vos clés API" "$NC"
     print_message "" ""
-    print_message "🚀 Bon développement !" "$PURPLE"
+    print_message "Bon développement !" "$PURPLE"
     
     # Nettoyage
-    print_message "🧹 Nettoyage des fichiers temporaires..." "$BLUE"
+    print_message "Nettoyage des fichiers temporaires..." "$BLUE"
     rm -f packages-microsoft-prod.deb docker-desktop-*.deb lazygit.tar.gz appimagelauncher_*.deb linux_signing_key.pub
-    print_message "✅ Nettoyage terminé" "$GREEN"
+    print_message "Nettoyage terminé" "$GREEN"
 }
 
-# ==========================================
-# POINT D'ENTRÉE PRINCIPAL
-# ==========================================
 
+# Point  d'entrée du script
 # Vérification des privilèges sudo
 if ! sudo -n true 2>/dev/null; then
-    print_message "🔐 Ce script nécessite des privilèges sudo." "$YELLOW"
+    print_message "Ce script nécessite des privilèges sudo." "$YELLOW"
     print_message "Veuillez entrer votre mot de passe pour continuer." "$CYAN"
     sudo -v
 fi
@@ -1106,8 +1548,8 @@ detect_distro
 
 # Confirmation avant installation
 echo ""
-print_message "⚠️  Ce script va installer de nombreux logiciels sur votre système." "$YELLOW"
-print_message "Chaque installation sera optionnelle (vous pourrez dire non)." "$CYAN"
+print_message "Ce script va installer de nombreux logiciels sur votre système." "$YELLOW"
+print_message "Chaque installation sera optionnelle (non/oui)." "$CYAN"
 echo ""
 while true; do
     echo -n -e "${YELLOW}Voulez-vous continuer ?${NC} [O/n]: "
@@ -1125,5 +1567,5 @@ done
 # Lancement du script principal
 main
 
-print_message "🏁 Script terminé avec succès !" "$GREEN"
+print_message "Installation terminées avec succès !" "$GREEN"
 exit 0
