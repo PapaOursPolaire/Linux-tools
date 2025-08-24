@@ -238,66 +238,66 @@ SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
 mkdir -p "$SCREENSHOT_DIR"
 
 # Options du menu
-OPTIONS="🖥️ Écran complet
-📱 Zone sélectionnée  
-🪟 Fenêtre active
-⏰ Retard 3 secondes
-🎥 Enregistrement écran
-📋 Presse-papiers"
+OPTIONS="Écran complet
+Zone sélectionnée  
+Fenêtre active
+Retard 3 secondes
+Enregistrement écran
+Presse-papiers"
 
 # Affichage du menu
-CHOICE=$(echo -e "$OPTIONS" | wofi --dmenu --prompt "📸 Capture d'écran" --width 400 --height 300)
+CHOICE=$(echo -e "$OPTIONS" | wofi --dmenu --prompt "Capture d'écran" --width 400 --height 300)
 
 # Nom de fichier avec timestamp
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 FILENAME="$SCREENSHOT_DIR/screenshot_$TIMESTAMP.png"
 
 case "$CHOICE" in
-    "🖥️ Écran complet")
+    "Écran complet")
         grim "$FILENAME"
-        notify-send "📸 Capture" "Écran complet sauvé" -i "$FILENAME"
+        notify-send "Capture" "Écran complet sauvé" -i "$FILENAME"
         ;;
-    "📱 Zone sélectionnée")
+    Zone sélectionnée")
         grim -g "$(slurp)" "$FILENAME"
-        notify-send "📸 Capture" "Zone sélectionnée sauvée" -i "$FILENAME"
+        notify-send "Capture" "Zone sélectionnée sauvée" -i "$FILENAME"
         ;;
-    "🪟 Fenêtre active")
+    "Fenêtre active")
         # Capturer la fenêtre active
         WINDOW_INFO=$(hyprctl activewindow | grep -E "at:|size:")
         if [[ -n "$WINDOW_INFO" ]]; then
             WINDOW_GEOM=$(echo "$WINDOW_INFO" | awk '/at:/ {x=$2; y=$3} /size:/ {w=$2; h=$3} END {gsub(/,/, "", x); gsub(/,/, "", y); gsub(/,/, "", w); gsub(/,/, "", h); print x","y" "w"x"h}')
             grim -g "$WINDOW_GEOM" "$FILENAME"
-            notify-send "📸 Capture" "Fenêtre active sauvée" -i "$FILENAME"
+            notify-send "Capture" "Fenêtre active sauvée" -i "$FILENAME"
         else
-            notify-send "❌ Erreur" "Impossible de capturer la fenêtre active"
+            notify-send "Erreur" "Impossible de capturer la fenêtre active"
         fi
         ;;
-    "⏰ Retard 3 secondes")
-        notify-send "⏰ Capture retardée" "3 secondes..." -t 1000
+    "Retard 3 secondes")
+        notify-send "Capture retardée" "3 secondes..." -t 1000
         sleep 3
         grim "$FILENAME"
-        notify-send "📸 Capture" "Capture retardée sauvée" -i "$FILENAME"
+        notify-send "Capture" "Capture retardée sauvée" -i "$FILENAME"
         ;;
-    "🎥 Enregistrement écran")
+    "Enregistrement écran")
         # Utiliser wf-recorder si disponible
         if command -v wf-recorder &>/dev/null; then
             RECORD_FILE="$SCREENSHOT_DIR/recording_$TIMESTAMP.mp4"
-            notify-send "🎥 Enregistrement" "Démarré - Ctrl+C pour arrêter"
+            notify-send "Enregistrement" "Démarré - Ctrl+C pour arrêter"
             wf-recorder -f "$RECORD_FILE" -g "$(slurp)"
-            notify-send "🎥 Enregistrement" "Sauvé: $(basename "$RECORD_FILE")"
+            notify-send "Enregistrement" "Sauvé: $(basename "$RECORD_FILE")"
         else
-            notify-send "❌ Erreur" "wf-recorder non installé"
+            notify-send "Erreur" "wf-recorder non installé"
         fi
         ;;
-    "📋 Presse-papiers")
+    "Presse-papiers")
         grim -g "$(slurp)" - | wl-copy
-        notify-send "📋 Presse-papiers" "Capture copiée"
+        notify-send "Presse-papiers" "Capture copiée"
         ;;
 esac
 
 # Ouvrir le dossier si demandé
 if [[ -f "$FILENAME" ]] && command -v thunar &>/dev/null; then
-    if [[ $(notify-send "📸 Capture terminée" "Ouvrir le dossier?" --action="open=Ouvrir") == "open" ]]; then
+    if [[ $(notify-send "Capture terminée" "Ouvrir le dossier?" --action="open=Ouvrir") == "open" ]]; then
         thunar "$SCREENSHOT_DIR"
     fi
 fi
@@ -313,32 +313,32 @@ create_power_menu() {
 #!/bin/bash
 # Menu de gestion d'énergie avec confirmations
 
-OPTIONS="🔒 Verrouiller
-🚪 Déconnexion
-🔄 Redémarrer
-⚻ Éteindre
-💤 Suspension
-🔋 Économie d'énergie
-⚡ Performance"
+OPTIONS="Verrouiller
+Déconnexion
+Redémarrer
+Éteindre
+Suspension
+Économie d'énergie
+Performance"
 
 CHOICE=$(echo -e "$OPTIONS" | wofi --dmenu --prompt "⚡ Gestion de l'énergie" --width 300)
 
 confirm_action() {
     local action=$1
-    local confirmation=$(echo -e "✅ Confirmer\n❌ Annuler" | wofi --dmenu --prompt "$action")
-    [[ "$confirmation" == "✅ Confirmer" ]]
+    local confirmation=$(echo -e "Confirmer\n Annuler" | wofi --dmenu --prompt "$action")
+    [[ "$confirmation" == "Confirmer" ]]
 }
 
 case "$CHOICE" in
-    "🔒 Verrouiller")
+    "Verrouiller")
         hyprlock
         ;;
-    "🚪 Déconnexion")
+    "Déconnexion")
         if confirm_action "Déconnexion"; then
             hyprctl dispatch exit
         fi
         ;;
-    "🔄 Redémarrer")
+    "Redémarrer")
         if confirm_action "Redémarrage système"; then
             systemctl reboot
         fi
@@ -348,19 +348,19 @@ case "$CHOICE" in
             systemctl poweroff
         fi
         ;;
-    "💤 Suspension")
+    "Suspension")
         systemctl suspend
         ;;
-    "🔋 Économie d'énergie")
+    "Économie d'énergie")
         # Profile économie d'énergie
         if command -v powerprofilesctl &>/dev/null; then
             powerprofilesctl set power-saver
-            notify-send "🔋 Économie" "Profil économique activé"
+            notify-send "Économie" "Profil économique activé"
         fi
         # Réduction luminosité
         brightnessctl set 30%
         ;;
-    "⚡ Performance")
+    "Performance")
         # Profile performance
         if command -v powerprofilesctl &>/dev/null; then
             powerprofilesctl set performance
@@ -432,12 +432,12 @@ get_gpu_info() {
     if command -v nvidia-smi &>/dev/null; then
         local gpu_info=$(nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits 2>/dev/null)
         if [[ -n "$gpu_info" ]]; then
-            echo "$gpu_info" | awk -F', ' '{printf "🎮 GPU: %s%% | VRAM: %s/%sMB | %s°C", $1, $2, $3, $4}'
+            echo "$gpu_info" | awk -F', ' '{printf "GPU: %s%% | VRAM: %s/%sMB | %s°C", $1, $2, $3, $4}'
         fi
     elif lspci | grep -i "vga\|3d" | grep -qi "amd"; then
-        echo "🎮 GPU: AMD (no monitoring available)"
+        echo "GPU: AMD (no monitoring available)"
     elif lspci | grep -i "vga\|3d" | grep -qi "intel"; then
-        echo "🎮 GPU: Intel Graphics"
+        echo "GPU: Intel Graphics"
     fi
 }
 
@@ -457,8 +457,8 @@ show_system_info() {
     echo -e "${PURPLE}║${NC}          ${CYAN}SYSTEM MONITOR${NC}              ${PURPLE}║${NC}"
     echo -e "${PURPLE}╚═══════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${WHITE}🕒 $(date '+%H:%M:%S %d/%m/%Y')${NC}"
-    echo -e "${WHITE}⏱️  Uptime: $(uptime -p)${NC}"
+    echo -e "${WHITE}$(date '+%H:%M:%S %d/%m/%Y')${NC}"
+    echo -e "${WHITE}Uptime: $(uptime -p)${NC}"
     echo ""
     
     get_cpu_info
@@ -472,8 +472,8 @@ show_system_info() {
     get_battery_info
     
     echo ""
-    echo -e "${WHITE}🎯 Processes:${NC} $(ps -e --no-headers | wc -l)"
-    echo -e "${WHITE}💤 User:${NC} $USER@$(hostname)"
+    echo -e "${WHITE}Processes:${NC} $(ps -e --no-headers | wc -l)"
+    echo -e "${WHITE}User:${NC} $USER@$(hostname)"
     echo ""
     echo -e "${GRAY}Press Ctrl+C to exit${NC}"
 }
@@ -493,10 +493,7 @@ EOF
     log "SUCCESS" "Moniteur système créé"
 }
 
-# =============================================================================
-# SCRIPTS D'APPLICATIONS COMPLEMENTAIRES
-# =============================================================================
-
+# Script de changement de thème
 create_theme_switcher() {
     log "INFO" "Création du changeur de thème"
     
@@ -576,7 +573,7 @@ apply_theme() {
         waybar &
     fi
     
-    notify-send "🎨 Thème" "Thème $theme_key appliqué"
+    notify-send "Thème" "Thème $theme_key appliqué"
 }
 
 # Interface de sélection
@@ -587,7 +584,7 @@ if [[ "$1" == "--menu" ]] || [[ -z "$1" ]]; then
         THEME_LIST="$THEME_LIST$theme_name\n"
     done
     
-    SELECTED=$(echo -e "$THEME_LIST" | wofi --dmenu --prompt "🎨 Sélectionner un thème")
+    SELECTED=$(echo -e "$THEME_LIST" | wofi --dmenu --prompt "Sélectionner un thème")
     
     if [[ -n "$SELECTED" ]] && [[ -n "${THEMES[$SELECTED]}" ]]; then
         apply_theme "${THEMES[$SELECTED]}"
@@ -611,10 +608,7 @@ EOF
     log "SUCCESS" "Changeur de thème créé"
 }
 
-# =============================================================================
-# FONCTION PRINCIPALE D'INSTALLATION
-# =============================================================================
-
+# Fonction principale
 main() {
     log "HEADER" "Démarrage de l'installation Hyprland Universal"
     
@@ -702,19 +696,13 @@ show_banner() {
     clear
     echo -e "${CYAN}"
     cat << 'EOF'
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   ██╗  ██╗██╗   ██╗██████╗ ██████╗ ██╗      █████╗ ███╗   ██╗  ║
-║   ██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗██║     ██╔══██╗████╗  ██║  ║
-║   ███████║ ╚████╔╝ ██████╔╝██████╔╝██║     ███████║██╔██╗ ██║  ║
-║   ██╔══██║  ╚██╔╝  ██╔═══╝ ██╔══██╗██║     ██╔══██║██║╚██╗██║  ║
-║   ██║  ██║   ██║   ██║     ██║  ██║███████╗██║  ██║██║ ╚████║  ║
-║   ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ║
-║                                                               ║
-║              Universal Deployment Script v2.0.0              ║
-║           Professional Waybar + Arcane/Fallout Theme         ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
+██╗  ██╗██╗   ██╗██████╗ ██████╗ ██╗      █████╗ ███╗   ██╗██████╗ 
+██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗██║     ██╔══██╗████╗  ██║██╔══██╗
+███████║ ╚████╔╝ ██████╔╝██████╔╝██║     ███████║██╔██╗ ██║██║  ██║
+██╔══██║  ╚██╔╝  ██╔═══╝ ██╔══██╗██║     ██╔══██║██║╚██╗██║██║  ██║
+██║  ██║   ██║   ██║     ██║  ██║███████╗██║  ██║██║ ╚████║██████╔╝
+╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ 
+
 EOF
     echo -e "${NC}"
 }
@@ -1012,10 +1000,6 @@ matching=fuzzy
 EOF
 
     cat > ~/.config/wofi/style.css << 'EOF'
-/* =============================================================================
-   Wofi Style Universal - Thème Arcane/Fallout  
-   ============================================================================= */
-
 * {
     font-family: 'JetBrains Mono Nerd Font', 'Fira Code', monospace;
     font-size: 14px;
@@ -1147,9 +1131,6 @@ configure_dunst_universal() {
     mkdir -p ~/.config/dunst
     
     cat > ~/.config/dunst/dunstrc << 'EOF'
-# =============================================================================
-# Configuration Dunst Universal - Thème Arcane/Fallout
-# =============================================================================
 
 [global]
     ### Display ###
@@ -1461,10 +1442,7 @@ EOF
     log "SUCCESS" "Configuration Hypridle et Hyprlock créée"
 }
 
-# =============================================================================
-# FINALISATION ET NETTOYAGE
-# =============================================================================
-
+# Nettoyage final et mise à jour
 cleanup_and_finalize() {
     log "HEADER" "Finalisation et nettoyage"
     
@@ -1505,19 +1483,13 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 fi
 #!/bin/bash
 
-# =============================================================================
-# Hyprland Universal Deployment Script - Complete Version
+# Hyprland Universel - Version je sais plus combien
 # Déploiement intelligent multi-distributions avec Waybar comme élément central
 # Support: Arch, Debian/Ubuntu, Fedora, openSUSE, Void Linux
 # Thème: Arcane/Fallout avec transparence et blur
-# Version: 2.0.0 Complete
-# =============================================================================
+# Version: 24/08/2025
 
 set -eE
-
-# =============================================================================
-# VARIABLES GLOBALES ET CONFIGURATION
-# =============================================================================
 
 # Informations du script
 readonly SCRIPT_VERSION="2.0.0"
@@ -1568,10 +1540,6 @@ declare -A CRITICAL_DEPS=(
     ["opensuse"]="patterns-devel-base-devel_basis git wayland-devel wayland-protocols-devel"
     ["void"]="base-devel git wayland-devel wayland-protocols"
 )
-
-# =============================================================================
-# FONCTIONS UTILITAIRES ET LOGGING
-# =============================================================================
 
 # Fonction de logging avancée
 log() {
@@ -1641,10 +1609,7 @@ confirm_action() {
     done
 }
 
-# =============================================================================
-# DÉTECTION AVANCÉE DU SYSTÈME
-# =============================================================================
-
+# Détection de la distribution Linux
 detect_distribution() {
     log "HEADER" "Détection de la distribution Linux"
     
@@ -1999,10 +1964,6 @@ evaluate_compatibility() {
     fi
 }
 
-# =============================================================================
-# GESTION DES PACKAGES MULTI-DISTRIBUTIONS
-# =============================================================================
-
 # Installation générique de package
 install_package() {
     local package=$1
@@ -2293,35 +2254,35 @@ install_hyprland_nixos() {
 { config, pkgs, ... }:
 
 {
-  programs.hyprland = {
-    enable = true;
-    xwayland.enable = true;
-  };
-
-  environment.systemPackages = with pkgs; [
-    waybar wofi kitty thunar dunst
-    hyprpaper hyprlock hypridle
-    pipewire wireplumber
-    xdg-desktop-portal-hyprland
-    brightnessctl playerctl grim slurp
-    jetbrains-mono papirus-icon-theme
-  ];
-
-  services.greetd = {
-    enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
-        user = "greeter";
-      };
+    programs.hyprland = {
+        enable = true;
+        xwayland.enable = true;
     };
-  };
 
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    pulse.enable = true;
-  };
+    environment.systemPackages = with pkgs; [
+        waybar wofi kitty thunar dunst
+        hyprpaper hyprlock hypridle
+        pipewire wireplumber
+        xdg-desktop-portal-hyprland
+        brightnessctl playerctl grim slurp
+        jetbrains-mono papirus-icon-theme
+    ];
+
+    services.greetd = {
+        enable = true;
+        settings = {
+        default_session = {
+            command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+            user = "greeter";
+        };
+        };
+    };
+
+    security.rtkit.enable = true;
+    services.pipewire = {
+        enable = true;
+        pulse.enable = true;
+    };
 }
 EOF
     
@@ -2346,10 +2307,6 @@ EOF
     
     log "SUCCESS" "Installation Gentoo initiée - compilation en cours"
 }
-
-# =============================================================================
-# INSTALLATION DES DRIVERS GPU UNIVERSELLE
-# =============================================================================
 
 install_gpu_drivers_universal() {
     log "HEADER" "Installation des drivers GPU ($GPU_VENDOR) pour $DISTRO_FAMILY"
@@ -2612,10 +2569,6 @@ EOF
     log "SUCCESS" "Configuration Intel terminée"
 }
 
-# =============================================================================
-# CONFIGURATION DU GESTIONNAIRE D'AFFICHAGE
-# =============================================================================
-
 configure_display_manager() {
     log "HEADER" "Configuration du gestionnaire d'affichage"
     
@@ -2704,10 +2657,7 @@ EOF
     log "SUCCESS" "GDM configuré pour Wayland"
 }
 
-# =============================================================================
-# CONFIGURATION WAYBAR PROFESSIONNELLE
-# =============================================================================
-
+# Configuration de Waybar
 create_waybar_config() {
     log "HEADER" "Configuration de Waybar (élément central)"
     
@@ -2875,10 +2825,6 @@ create_waybar_styles() {
     log "INFO" "Création des styles CSS Waybar - Thème Arcane/Fallout"
     
     cat > ~/.config/waybar/style.css << 'EOF'
-/* =============================================================================
-   Waybar Professional Style - Thème Arcane/Fallout Universal
-   Support position top/bottom avec transparence adaptative GPU
-   ============================================================================= */
 
 * {
     font-family: 'JetBrains Mono Nerd Font', 'Fira Code', monospace;
@@ -2913,10 +2859,6 @@ window#waybar.bottom {
     border-bottom: 3px solid #33ccff;
     border-top: 1px solid rgba(51, 204, 255, 0.3);
 }
-
-/* =============================================================================
-   WORKSPACES AVANCÉS
-   ============================================================================= */
 
 #workspaces {
     background: linear-gradient(135deg, 
@@ -2971,10 +2913,6 @@ window#waybar.bottom {
     50% { opacity: 0.7; }
 }
 
-/* =============================================================================
-   FENÊTRE ACTIVE
-   ============================================================================= */
-
 #window {
     color: #ffffff;
     background: linear-gradient(135deg, 
@@ -2988,10 +2926,6 @@ window#waybar.bottom {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-/* =============================================================================
-   HORLOGE CENTRALE
-   ============================================================================= */
 
 #clock {
     color: #33ccff;
@@ -3019,10 +2953,6 @@ window#waybar.bottom {
         0 6px 20px rgba(0, 0, 0, 0.4);
     transform: scale(1.02);
 }
-
-/* =============================================================================
-   MODULES SYSTÈME
-   ============================================================================= */
 
 #cpu, #memory, #network, #pulseaudio, #bluetooth, #battery {
     color: #ffffff;
@@ -3140,10 +3070,6 @@ window#waybar.bottom {
         rgba(80, 250, 123, 0.1) 100%);
 }
 
-/* =============================================================================
-   SYSTRAY ET LANCEUR
-   ============================================================================= */
-
 #tray {
     background: linear-gradient(135deg, 
         rgba(0, 0, 0, 0.4) 0%, 
@@ -3206,10 +3132,6 @@ window#waybar.bottom {
     transform: scale(1.05);
     box-shadow: 0 0 20px rgba(255, 85, 85, 0.6);
 }
-
-/* =============================================================================
-   EFFETS SPÉCIAUX ET ANIMATIONS
-   ============================================================================= */
 
 /* Animation globale au survol */
 #cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, 
@@ -3285,10 +3207,6 @@ EOF
     log "SUCCESS" "Styles CSS Waybar créés avec thème Arcane/Fallout"
 }
 
-# =============================================================================
-# CONFIGURATION HYPRLAND COMPLÈTE
-# =============================================================================
-
 create_hyprland_config() {
     log "HEADER" "Configuration complète de Hyprland"
     
@@ -3296,10 +3214,6 @@ create_hyprland_config() {
     
     # Configuration principale
     cat > ~/.config/hypr/hyprland.conf << 'EOF'
-# =============================================================================
-# Configuration Hyprland Universal - Thème Arcane/Fallout
-# Détection automatique GPU et optimisations adaptatives
-# =============================================================================
 
 # Variables d'environnement adaptatives
 EOF
@@ -3316,10 +3230,6 @@ env = XDG_SESSION_DESKTOP,Hyprland
 env = QT_AUTO_SCREEN_SCALE_FACTOR,1
 env = QT_WAYLAND_DISABLE_WINDOWDECORATION,1
 
-# =============================================================================
-# CONFIGURATION MONITEURS ET WORKSPACES
-# =============================================================================
-
 # Détection automatique des moniteurs
 monitor=,preferred,auto,auto
 
@@ -3330,18 +3240,10 @@ workspace = 3, monitor:DP-1
 workspace = 4, monitor:DP-1
 workspace = 5, monitor:DP-1
 
-# =============================================================================
-# PROGRAMMES PAR DÉFAUT
-# =============================================================================
-
 $terminal = kitty
 $fileManager = thunar
 $menu = wofi --show drun
 $browser = firefox
-
-# =============================================================================
-# CONFIGURATION D'ENTRÉE
-# =============================================================================
 
 input {
     kb_layout = fr
@@ -3370,10 +3272,6 @@ device {
     sensitivity = -0.5
 }
 
-# =============================================================================
-# APPARENCE - OPTIMISÉE PAR GPU
-# =============================================================================
-
 general {
     gaps_in = 8
     gaps_out = 12
@@ -3385,10 +3283,6 @@ general {
     layout = dwindle
 }
 
-# =============================================================================
-# DÉCORATION - OPTIMISÉE PAR GPU
-# =============================================================================
-
 EOF
 
     # Ajout de la configuration GPU spécifique
@@ -3397,19 +3291,11 @@ EOF
     # Configuration commune (suite)
     cat >> ~/.config/hypr/hyprland.conf << 'EOF'
 
-# =============================================================================
-# ANIMATIONS - ADAPTÉES AUX PERFORMANCES
-# =============================================================================
-
 EOF
     
     get_gpu_animation_config >> ~/.config/hypr/hyprland.conf
     
     cat >> ~/.config/hypr/hyprland.conf << 'EOF'
-
-# =============================================================================
-# LAYOUTS ET FENÊTRES
-# =============================================================================
 
 dwindle {
     pseudotile = true
@@ -3426,10 +3312,6 @@ master {
     special_scale_factor = 0.8
     mfact = 0.55
 }
-
-# =============================================================================
-# GESTES ET ENTRÉES
-# =============================================================================
 
 gestures {
     workspace_swipe = true
@@ -3454,10 +3336,6 @@ misc {
     enable_swallow = true
     swallow_regex = ^(kitty)$
 }
-
-# =============================================================================
-# RÈGLES DE FENÊTRES - THÈME ARCANE/FALLOUT
-# =============================================================================
 
 # Transparence adaptée au GPU
 EOF
@@ -3487,10 +3365,6 @@ windowrulev2 = workspace 5,class:^(spotify|Spotify)$
 windowrulev2 = size 800 600,class:^(pavucontrol)$
 windowrulev2 = size 600 400,class:^(wofi)$
 windowrulev2 = center,class:^(wofi)$
-
-# =============================================================================
-# RACCOURCIS CLAVIER
-# =============================================================================
 
 $mainMod = SUPER
 
@@ -3599,10 +3473,6 @@ bind = $mainMod SHIFT, P, exec, systemctl suspend
 bindm = $mainMod, mouse:272, movewindow
 bindm = $mainMod, mouse:273, resizewindow
 
-# =============================================================================
-# CONFIGURATION GAMING ET PERFORMANCE
-# =============================================================================
-
 # Variables pour les performances gaming
 env = WLR_DRM_NO_ATOMIC,1
 env = __GL_VRR_ALLOWED,1
@@ -3612,10 +3482,6 @@ env = WLR_NO_HARDWARE_CURSORS,1
 windowrulev2 = immediate,class:^(steam_app_.*)$
 windowrulev2 = immediate,class:^(gamescope)$
 windowrulev2 = immediate,class:^(cs2|csgo|dota2)$
-
-# =============================================================================
-# EXÉCUTION AUTOMATIQUE
-# =============================================================================
 
 exec-once = ~/.config/hypr/scripts/autostart.sh
 exec-once = waybar
