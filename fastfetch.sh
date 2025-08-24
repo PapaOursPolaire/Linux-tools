@@ -6,7 +6,7 @@ CLONE_DIR="$HOME/fastfetch_build"
 CONFIG_DIR="$HOME/.config/fastfetch"
 CONFIG_FILE="$CONFIG_DIR/config.conf"
 
-echo "📦 Détection de la distribution..."
+echo "Détection de la distribution..."
 if command -v pacman &>/dev/null; then
   INSTALLER="sudo pacman -Sy --noconfirm"
   DEPS="git cmake gcc make libpng pango freetype2"
@@ -20,18 +20,18 @@ elif command -v zypper &>/dev/null; then
   INSTALLER="sudo zypper install -y"
   DEPS="git cmake gcc make libpng pango freetype2"
 else
-  echo "❌ Distribution inconnue"
+  echo "Distribution inconnue"
   exit 1
 fi
 
-echo "📦 Installation des dépendances..."
+echo "Installation des dépendances..."
 eval "$INSTALLER $DEPS"
 
-echo "🧹 Nettoyage..."
+echo "Nettoyage..."
 rm -rf "$CLONE_DIR"
 git clone "$REPO_URL" "$CLONE_DIR"
 
-echo "🛠️ Compilation avec CMake..."
+echo "Compilation avec CMake..."
 cd "$CLONE_DIR"
 mkdir -p build
 cd build
@@ -39,7 +39,7 @@ cmake ..
 make -j$(nproc)
 sudo make install
 
-echo "🎨 Configuration graphique..."
+echo "Configuration graphique..."
 mkdir -p "$CONFIG_DIR"
 cat > "$CONFIG_FILE" << 'EOF'
 #FASTFETCH CONFIGURATION
@@ -64,13 +64,13 @@ align = "left"
 structure = "title os kernel de wm shell terminal cpu gpu memory disk battery uptime"
 EOF
 
-echo "💻 Ajout de fastfetch au terminal..."
+echo "Ajout de fastfetch au terminal..."
 if [[ "$SHELL" == */bash ]]; then
   [[ -f ~/.bashrc ]] && echo -e "\nfastfetch" >> ~/.bashrc
 elif [[ "$SHELL" == */zsh ]]; then
   [[ -f ~/.zshrc ]] && echo -e "\nfastfetch" >> ~/.zshrc
 else
-  echo "⚠️ Shell inconnu. Ajoutez 'fastfetch' manuellement."
+  echo "Shell inconnu. Ajoutez 'fastfetch' manuellement."
 fi
 
-echo "✅ Installation terminée. Lancez fastfetch ou redémarrez le terminal."
+echo "Installation terminée. Lancez fastfetch ou redémarrez le terminal."
